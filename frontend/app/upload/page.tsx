@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth0 } from '@auth0/auth0-react';
 import { useEcho, useEchoClient } from '@merit-systems/echo-react-sdk';
 import { Auth0Button } from '@/components/Auth0Button';
+import { EchoSignIn } from '@/components/EchoSignIn';
 
 interface AnalysisResult {
   success: boolean;
@@ -158,34 +159,57 @@ export default function UploadPage() {
         <div className="max-w-4xl mx-auto mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Feng Shui AI</h1>
+            <p className="text-sm text-gray-500 mt-1">Powered by Auth0 + Echo</p>
           </div>
-          <Auth0Button />
+          <div className="flex items-center gap-3">
+            <Auth0Button />
+            {isAuth0Authenticated && <EchoSignIn />}
+          </div>
         </div>
 
         <div className="max-w-4xl mx-auto">
           {/* Status Card */}
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-8">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {isAuth0Authenticated ? 'Your Status' : 'Free Trial'}
-                </h3>
-                <p className="text-gray-600">
-                  {isAuth0Authenticated
-                    ? isEchoAuthenticated && balance !== null
-                      ? `${Math.floor(balance / 100)} analyses remaining`
-                      : 'Unlimited analyses (Auth0 user)'
-                    : `${FREE_REQUESTS - requestCount} free analyses remaining`
-                  }
-                </p>
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    {isAuth0Authenticated ? '🔐 Authenticated' : '🆓 Free Trial'}
+                  </h3>
+                  <p className="text-gray-600">
+                    {isAuth0Authenticated
+                      ? 'Unlimited analyses with Auth0'
+                      : `${FREE_REQUESTS - requestCount} free analyses remaining`
+                    }
+                  </p>
+                </div>
+                {!isAuth0Authenticated && (
+                  <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-lg border border-gray-200">
+                    Sign in for unlimited access
+                  </div>
+                )}
               </div>
-              {isAuth0Authenticated && isEchoAuthenticated && (
-                <button
-                  onClick={handleAddCredits}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                >
-                  Add Credits ($5 = 50 analyses)
-                </button>
+
+              {/* Echo Payment Section - Always show for demo */}
+              {isAuth0Authenticated && (
+                <div className="border-t border-blue-200 pt-4 flex justify-between items-center">
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900 mb-1">
+                      💳 Echo Monetization
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      {isEchoAuthenticated && balance !== null
+                        ? `Balance: ${Math.floor(balance / 100)} paid analyses`
+                        : 'Optional: Purchase credits for premium features'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleAddCredits}
+                    className="px-4 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-700 hover:to-blue-700 transition-colors text-sm font-medium shadow-md"
+                  >
+                    💰 Add Credits ($5 = 50 analyses)
+                  </button>
+                </div>
               )}
             </div>
           </div>
