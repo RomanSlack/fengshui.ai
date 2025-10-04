@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useAuth0 } from '@auth0/auth0-react';
 import { useEcho, useEchoClient } from '@merit-systems/echo-react-sdk';
-import { EchoAuth } from '@/components/EchoAuth';
+import { Auth0Button } from '@/components/Auth0Button';
 
 interface AnalysisResult {
   success: boolean;
@@ -17,8 +18,11 @@ export default function UploadPage() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Echo integration
-  const { isAuthenticated, user } = useEcho();
+  // Auth0 integration
+  const { isAuthenticated: isAuth0Authenticated, user: auth0User } = useAuth0();
+
+  // Echo integration for payments
+  const { isAuthenticated: isEchoAuthenticated } = useEcho();
   const echoClient = useEchoClient({
     apiUrl: 'https://echo.merit.systems'
   });
@@ -38,12 +42,12 @@ export default function UploadPage() {
 
   // Check balance if authenticated
   useEffect(() => {
-    if (isAuthenticated && echoClient) {
+    if (isEchoAuthenticated && echoClient) {
       echoClient.balance.get().then((bal) => {
         setBalance(bal.balance);
       }).catch(console.error);
     }
-  }, [isAuthenticated, echoClient]);
+  }, [isEchoAuthenticated, echoClient]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -67,15 +71,15 @@ export default function UploadPage() {
       return;
     }
 
-    // Check if user has free requests left
-    if (!isAuthenticated && requestCount >= FREE_REQUESTS) {
+    // Check if user has free requests left (not signed in with Auth0)
+    if (!isAuth0Authenticated && requestCount >= FREE_REQUESTS) {
       setShowPaymentPrompt(true);
-      setError("You've used your 3 free analyses. Please sign in to continue!");
+      setError("You've used your 3 free analyses. Please sign in with Google to continue!");
       return;
     }
 
-    // Check if authenticated user has balance
-    if (isAuthenticated && balance !== null && balance <= 0) {
+    // Check if authenticated user has balance (for Echo payments)
+    if (isAuth0Authenticated && isEchoAuthenticated && balance !== null && balance <= 0) {
       setShowPaymentPrompt(true);
       setError("Insufficient balance. Please add credits to continue!");
       return;
@@ -106,17 +110,19 @@ export default function UploadPage() {
       });
 
       // Increment request count and deduct balance
-      if (!isAuthenticated) {
+      if (!isAuth0Authenticated) {
+        // Not signed in - count free requests
         const newCount = requestCount + 1;
         setRequestCount(newCount);
         localStorage.setItem('fengshui_request_count', newCount.toString());
-      } else if (echoClient) {
-        // Deduct from Echo balance (you set the price, e.g., 100 = $0.01)
+      } else if (isAuth0Authenticated && isEchoAuthenticated && echoClient) {
+        // Signed in with both Auth0 and Echo - deduct from balance
         await echoClient.balance.deduct({ amount: 100 });
         // Refresh balance
         const bal = await echoClient.balance.get();
         setBalance(bal.balance);
       }
+      // If Auth0 authenticated but not Echo, treat as unlimited (or implement your logic)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to analyze image");
     } finally {
@@ -153,7 +159,7 @@ export default function UploadPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Feng Shui AI</h1>
           </div>
-          <EchoAuth />
+          <Auth0Button />
         </div>
 
         <div className="max-w-4xl mx-auto">
@@ -162,16 +168,18 @@ export default function UploadPage() {
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {isAuthenticated ? 'Your Balance' : 'Free Trial'}
+                  {isAuth0Authenticated ? 'Your Status' : 'Free Trial'}
                 </h3>
                 <p className="text-gray-600">
-                  {isAuthenticated
-                    ? `${balance !== null ? Math.floor(balance / 100) : '...'} analyses remaining`
+                  {isAuth0Authenticated
+                    ? isEchoAuthenticated && balance !== null
+                      ? `${Math.floor(balance / 100)} analyses remaining`
+                      : 'Unlimited analyses (Auth0 user)'
                     : `${FREE_REQUESTS - requestCount} free analyses remaining`
                   }
                 </p>
               </div>
-              {isAuthenticated && (
+              {isAuth0Authenticated && isEchoAuthenticated && (
                 <button
                   onClick={handleAddCredits}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
@@ -286,9 +294,9 @@ export default function UploadPage() {
             {error && (
               <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-red-700 text-sm">{error}</p>
-                {showPaymentPrompt && !isAuthenticated && (
+                {showPaymentPrompt && !isAuth0Authenticated && (
                   <p className="text-gray-700 text-sm mt-2">
-                    Sign in to get access to paid analyses and continue using Feng Shui AI!
+                    Sign in with Google to continue using Feng Shui AI!
                   </p>
                 )}
               </div>
