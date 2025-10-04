@@ -5,6 +5,9 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from google import genai
 from google.genai import types
+from dotenv import load_dotenv
+
+
 
 app = FastAPI()
 
@@ -20,6 +23,7 @@ app.add_middleware(
 )
 
 # Gemini client
+load_dotenv()
 client = genai.Client(api_key=os.environ.get("GOOGLE_API_KEY"))
 
 print("GOOGLE_API_KEY:", os.environ.get("GOOGLE_API_KEY"))
