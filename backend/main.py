@@ -1,3 +1,4 @@
+#!/usr/bin/env -S uv run fastapi dev
 # main.py
 import base64
 import os
@@ -6,8 +7,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
-
-
 
 app = FastAPI()
 
@@ -23,10 +22,9 @@ app.add_middleware(
 )
 
 # Gemini client
-load_dotenv()
+# Load .env from current directory or parent directory
+load_dotenv()  # Looks in current directory first, then parent
 client = genai.Client(api_key=os.environ.get("GOOGLE_API_KEY"))
-
-print("GOOGLE_API_KEY:", os.environ.get("GOOGLE_API_KEY"))
 
 def encode_image_to_base64(file) -> str:
     return base64.b64encode(file.read()).decode("utf-8")
@@ -76,3 +74,8 @@ async def analyze_image(file: UploadFile = File(...)):
     image_data = await file.read()
     result = call_gemini_fengshui(image_data)
     return {"result": result}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
