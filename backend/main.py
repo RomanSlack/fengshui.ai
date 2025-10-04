@@ -1,5 +1,15 @@
 #!/usr/bin/env -S uv run fastapi dev
 # main.py
+# FastAPI backend for Feng Shui AI image analysis
+#
+# Setup:
+#   1. Install dependencies: pip install -r requirements.txt
+#   2. Create .env file with: GOOGLE_API_KEY=your_api_key_here
+#   3. Run server: uvicorn main:app --reload --port 8000
+#
+# API Endpoints:
+#   POST /analyze/ - Upload image and get feng shui analysis
+
 import base64
 import os
 from fastapi import FastAPI, UploadFile, File
