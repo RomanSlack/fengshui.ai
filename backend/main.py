@@ -1,20 +1,33 @@
+# main.py
 import base64
+import os
+from fastapi import FastAPI, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
 from google import genai
 from google.genai import types
 
-# ✅ Insert your API key (or set GOOGLE_API_KEY in env vars)
-client = genai.Client(api_key="AIzaSyB_l3REzkuXFqi3Dy7w84i4s1aFjWQKQzM ")
+app = FastAPI()
 
-def encode_image_to_base64(path: str) -> str:
-    """Helper to load & base64-encode an image file"""
-    with open(path, "rb") as f:
-        return base64.b64encode(f.read()).decode("utf-8")
+# Allow CORS for frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # Frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-def call_gemini_fengshui(image_path: str) -> str:
-    # 1. Encode the image
-    img_b64 = encode_image_to_base64(image_path)
+# Gemini client
+client = genai.Client(api_key=os.environ.get("GOOGLE_API_KEY"))
 
-    # 2. Feng Shui analysis prompt (improved)
+
+def encode_image_to_base64(file) -> str:
+    return base64.b64encode(file.read()).decode("utf-8")
+
+
+def call_gemini_fengshui(image_data: bytes) -> str:
+    img_b64 = base64.b64encode(image_data).decode("utf-8")
+
     prompt = (
         "You are a Feng Shui master. Analyze the room in this image.\n\n"
         "Please provide:\n"
@@ -25,7 +38,6 @@ def call_gemini_fengshui(image_path: str) -> str:
         "Keep your response concise, structured, and clear."
     )
 
-    # 3. Call Gemini
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=[
@@ -43,16 +55,17 @@ def call_gemini_fengshui(image_path: str) -> str:
             }
         ],
         config=types.GenerateContentConfig(
-            temperature=0.3,  # slight creativity
+            temperature=0.3,
             max_output_tokens=300,
-            thinking_config=types.ThinkingConfig(thinking_budget=0)  # disables hidden reasoning
+            thinking_config=types.ThinkingConfig(thinking_budget=0)
         ),
     )
 
     return response.text
 
-if __name__ == "__main__":
-    image_path = "room_photo.png"   
-    result = call_gemini_fengshui(image_path)
-    print("Gemini Feng Shui output:")
-    print(result)
+
+@app.post("/analyze/")
+async def analyze_image(file: UploadFile = File(...)):
+    image_data = await file.read()
+    result = call_gemini_fengshui(image_data)
+    return {"result": result}
