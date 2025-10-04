@@ -12,11 +12,21 @@
 
 import base64
 import os
+import logging
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
+
+from object_detection import detect_room_objects
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -82,7 +92,29 @@ def call_gemini_fengshui(image_data: bytes) -> str:
 @app.post("/analyze/")
 async def analyze_image(file: UploadFile = File(...)):
     image_data = await file.read()
+
+    # Run object detection with automatic saving to results folder
+    try:
+        detected_objects, json_path, image_path = detect_room_objects(image_data, save_results=True)
+        logger.info(f"Object detection completed. Found {len(detected_objects)} objects")
+        logger.info(f"Results saved to: {json_path}")
+        logger.info(f"Annotated image saved to: {image_path}")
+
+        for obj in detected_objects:
+            logger.info(
+                f"  - {obj['class']}: confidence={obj['confidence']}, "
+                f"bbox=({obj['bbox']['x1']}, {obj['bbox']['y1']}, {obj['bbox']['x2']}, {obj['bbox']['y2']}), "
+                f"center=({obj['center']['x']}, {obj['center']['y']})"
+            )
+    except Exception as e:
+        logger.error(f"Object detection failed: {e}")
+        detected_objects = []
+        json_path = ""
+        image_path = ""
+
+    # Run Feng Shui analysis
     result = call_gemini_fengshui(image_data)
+
     return {"result": result}
 
 
