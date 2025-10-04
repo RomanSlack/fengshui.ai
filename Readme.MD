@@ -12,7 +12,7 @@ Fengshui.fy is an AI-powered platform for analyzing and improving your environme
 - Modern web interface
 
 ## Getting Started
-Clone the repository and follow the setup instructions in the `backend/README.md` and `frontend/README.md` files.
+Clone the repository and follow the setup instructions in the `SETUP.md` file.
 
 ## License
 See the LICENSE file for details.
