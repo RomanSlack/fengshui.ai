@@ -1,15 +1,29 @@
 "use client";
 
 import { useAuth0 } from '@auth0/auth0-react';
+import { useEffect } from 'react';
 
 export function Auth0Button() {
-  const { user, isAuthenticated, isLoading, loginWithRedirect, logout } = useAuth0();
+  const { user, isAuthenticated, isLoading, loginWithRedirect, logout, error } = useAuth0();
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Auth0 State:', { isAuthenticated, isLoading, user, error });
+  }, [isAuthenticated, isLoading, user, error]);
 
   if (isLoading) {
     return (
       <div className="flex items-center gap-2">
         <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
         <span className="text-sm text-gray-600">Loading...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-sm text-red-600">
+        Error: {error.message}
       </div>
     );
   }
@@ -47,7 +61,8 @@ export function Auth0Button() {
     <button
       onClick={() => loginWithRedirect({
         authorizationParams: {
-          connection: 'google-oauth2',
+          // Try without forcing Google connection first
+          // connection: 'google-oauth2',
         }
       })}
       className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"

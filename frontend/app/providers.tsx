@@ -13,8 +13,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
       domain={auth0Domain}
       clientId={auth0ClientId}
       authorizationParams={{
-        redirect_uri: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
+        redirect_uri: typeof window !== 'undefined' ? `${window.location.origin}/upload` : 'http://localhost:3000/upload',
+        audience: `https://${auth0Domain}/api/v2/`,
+        scope: "openid profile email"
       }}
+      cacheLocation="localstorage"
+      useRefreshTokens={true}
     >
       <EchoProvider
         config={{
