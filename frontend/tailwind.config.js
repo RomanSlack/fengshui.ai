@@ -10,8 +10,23 @@ module.exports = {
       fontFamily: {
         sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         inter: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        serif: ['Georgia', 'Cambria', 'Times New Roman', 'serif'],
       },
       colors: {
+        // Feng Shui palette
+        zen: {
+          sage: '#A8B5A0',        // muted green
+          moss: '#8A9A7B',        // deeper green
+          pine: '#6B7A5E',        // forest green
+          blush: '#F4E4E8',       // pale pink
+          rose: '#E8CED4',        // soft rose
+          petal: '#DDB8C0',       // deeper pink
+          sand: '#EAE3D8',        // soft beige
+          stone: '#D4CCC1',       // warm beige
+          earth: '#B8AFA4',       // earth tone
+          cloud: '#FDFBF9',       // off-white
+          mist: '#F7F5F3',        // very light beige
+        },
         border: "rgb(var(--border))",
         input: "rgb(var(--input))",
         ring: "rgb(var(--ring))",
@@ -45,6 +60,9 @@ module.exports = {
           DEFAULT: "rgb(var(--card))",
           foreground: "rgb(var(--card-foreground))",
         },
+      },
+      letterSpacing: {
+        'calm': '0.05em',
       },
       boxShadow: {
         paper: "var(--paper-shadow)",
