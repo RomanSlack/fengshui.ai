@@ -8,6 +8,8 @@ from google.genai import types
 
 app = FastAPI()
 
+
+
 # Allow CORS for frontend
 app.add_middleware(
     CORSMiddleware,
@@ -20,6 +22,7 @@ app.add_middleware(
 # Gemini client
 client = genai.Client(api_key=os.environ.get("GOOGLE_API_KEY"))
 
+print("GOOGLE_API_KEY:", os.environ.get("GOOGLE_API_KEY"))
 
 def encode_image_to_base64(file) -> str:
     return base64.b64encode(file.read()).decode("utf-8")
