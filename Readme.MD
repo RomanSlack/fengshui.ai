@@ -1,6 +1,6 @@
-# Fengshui.ai
+# Fengshui.fy
 
-Fengshui.ai is an AI-powered platform for analyzing and improving your environment using Feng Shui principles.
+Fengshui.fy is an AI-powered platform for analyzing and improving your environment using Feng Shui principles.
 
 ## Project Links
 
