@@ -1,4 +1,4 @@
-# Feng Shui AI - Setup Guide
+# FengShui.fy - Setup Guide
 
 ## 🎯 Echo AI Monetization Integration
 
