@@ -73,8 +73,10 @@ export default function HybridViewer({
     setModelStatus('processing');
 
     const loadTimer = setTimeout(() => {
-      // Use the static demo model
-      setModelUrl('/demo/model.fbx');
+      // Google Drive direct download link for demo 3D model
+      const externalModelUrl = 'https://drive.google.com/uc?export=download&id=1OhKe-pec3FzEcVBhaUZDAZBw-4d_o23H';
+
+      setModelUrl(externalModelUrl);
       setModelStatus('completed');
     }, 2000); // 2 second simulated processing
 
@@ -107,7 +109,7 @@ export default function HybridViewer({
             : 'Explore your room in 3D space with interactive feng shui insights'}
         </p>
 
-        {/* Mode Toggle Buttons */}
+        {/* Mode Toggle Buttons - Hide 3D for demo if model unavailable */}
         <div className="flex gap-3 items-center">
           <button
             onClick={() => handleViewModeChange('2D')}
@@ -119,17 +121,19 @@ export default function HybridViewer({
           >
             2D View
           </button>
-          <button
-            onClick={() => handleViewModeChange('3D')}
-            disabled={!is3DAvailable}
-            className={`px-8 py-3 rounded-full font-light tracking-calm transition-all duration-500 ease-out ${
-              viewMode === '3D' && is3DAvailable
-                ? 'bg-zen-sage text-white shadow-lg scale-105'
-                : 'bg-white/80 text-zen-earth border-2 border-gray-300 hover:border-zen-sage disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-300'
-            }`}
-          >
-            3D View
-          </button>
+          {modelId && (
+            <button
+              onClick={() => handleViewModeChange('3D')}
+              disabled={!is3DAvailable}
+              className={`px-8 py-3 rounded-full font-light tracking-calm transition-all duration-500 ease-out ${
+                viewMode === '3D' && is3DAvailable
+                  ? 'bg-zen-sage text-white shadow-lg scale-105'
+                  : 'bg-white/80 text-zen-earth border-2 border-gray-300 hover:border-zen-sage disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-300'
+              }`}
+            >
+              3D View
+            </button>
+          )}
 
           {/* Status indicator */}
           {modelId && !is3DAvailable && (

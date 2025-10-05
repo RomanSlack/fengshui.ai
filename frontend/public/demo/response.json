@@ -1,8 +1,26 @@
 {
-  "timestamp": "20251005_072030_268251",
-  "image_file": "detection_20251005_072030_268251.jpg",
-  "total_detections": 6,
-  "detections": [
+  "score": 8,
+  "overall_analysis": "Your bedroom radiates exceptional positive energy with an abundance of natural plant life creating a strong wood element presence. The multiple potted plants throughout the space purify the air and promote growth, vitality, and harmony. The bed placement supports restful sleep, and the overall balance of living greenery creates a nurturing sanctuary perfect for rest and rejuvenation.",
+  "strengths": [
+    "Exceptional abundance of living plants creating powerful wood element energy",
+    "Plants positioned strategically throughout the room for optimal chi circulation",
+    "Bed placement allows for natural energy flow and restful sleep",
+    "Natural elements create a strong connection to nature and promote healing energy"
+  ],
+  "weaknesses": [
+    "Very heavy wood element may need balancing with other elements",
+    "Some plant positioning could be optimized for better energy distribution",
+    "Potential for energy stagnation if plants are not well-maintained",
+    "May benefit from introducing water element to nourish the abundant wood energy"
+  ],
+  "suggestions": [
+    "Ensure all plants are healthy and well-maintained - remove any dying leaves immediately",
+    "Consider adding a small water feature or fountain to balance and nourish the wood element",
+    "Place plants at varying heights to create dynamic energy flow throughout the space",
+    "Introduce earth element decor (ceramics, stones) to ground the abundant growth energy",
+    "Rotate plant positions seasonally to refresh energy patterns and prevent stagnation"
+  ],
+  "detected_objects": [
     {
       "class": "potted plant",
       "confidence": 0.848,
@@ -99,5 +117,100 @@
         "y": 1021.01
       }
     }
-  ]
+  ],
+  "tooltips": [
+    {
+      "object_class": "potted plant",
+      "object_index": 0,
+      "type": "good",
+      "message": "Excellent placement! This thriving plant creates powerful wood element energy near the floor level, grounding the space and purifying the air. Its position promotes growth and vitality throughout the room.",
+      "coordinates": {
+        "bbox": {
+          "x1": 22.73,
+          "y1": 825.31,
+          "x2": 215.26,
+          "y2": 1132.65,
+          "width": 192.53,
+          "height": 307.33
+        },
+        "center": {
+          "x": 118.99,
+          "y": 978.98
+        }
+      },
+      "confidence": 0.848
+    },
+    {
+      "object_class": "bed",
+      "object_index": 1,
+      "type": "good",
+      "message": "Your bed is well-positioned to receive the nurturing energy from the surrounding plants. This placement promotes deep, restorative sleep while being supported by the abundant life force energy in the room.",
+      "coordinates": {
+        "bbox": {
+          "x1": 437.54,
+          "y1": 871.34,
+          "x2": 1159.18,
+          "y2": 1325.15,
+          "width": 721.64,
+          "height": 453.8
+        },
+        "center": {
+          "x": 798.36,
+          "y": 1098.24
+        }
+      },
+      "confidence": 0.78
+    },
+    {
+      "object_class": "potted plant",
+      "object_index": 2,
+      "type": "good",
+      "message": "This elevated plant creates excellent vertical energy flow, drawing chi upward and distributing fresh oxygen at breathing level. Perfect for promoting clarity and vitality during waking hours.",
+      "coordinates": {
+        "bbox": {
+          "x1": 989.68,
+          "y1": 591.05,
+          "x2": 1164.16,
+          "y2": 899.6,
+          "width": 174.48,
+          "height": 308.56
+        },
+        "center": {
+          "x": 1076.92,
+          "y": 745.33
+        }
+      },
+      "confidence": 0.609
+    },
+    {
+      "object_class": "potted plant",
+      "object_index": 4,
+      "type": "neutral",
+      "message": "This large central plant is a powerful focal point, but ensure it doesn't block natural pathways or energy flow. Keep it well-pruned and healthy to maintain its positive influence on the space.",
+      "coordinates": {
+        "bbox": {
+          "x1": 227.82,
+          "y1": 361.18,
+          "x2": 715.45,
+          "y2": 1122.02,
+          "width": 487.63,
+          "height": 760.84
+        },
+        "center": {
+          "x": 471.63,
+          "y": 741.6
+        }
+      },
+      "confidence": 0.444
+    }
+  ],
+  "detection_metadata": {
+    "total_objects": 6,
+    "json_path": "/demo/detection.json",
+    "image_path": "/demo/room.jpg"
+  },
+  "model_3d": {
+    "model_id": "demo_model_static",
+    "status": "completed"
+  }
 }

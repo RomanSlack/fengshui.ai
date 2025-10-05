@@ -537,8 +537,8 @@ export default function UploadPage() {
                 imageUrl={preview}
                 tooltips={result.tooltips}
                 modelId={result.model_3d?.model_id || null}
-                imageWidth={1024}
-                imageHeight={1024}
+                imageWidth={1170}
+                imageHeight={1463}
               />
             )}
 
@@ -607,13 +607,13 @@ export default function UploadPage() {
               </ul>
             </div>
 
-            {/* New Analysis Button */}
+            {/* Restart Demo Button */}
             <div className="text-center pt-8">
               <button
                 onClick={handleReset}
                 className="px-16 py-4 text-lg rounded-full bg-white/80 hover:bg-white text-zen-pine border-2 border-zen-sage hover:border-zen-pine transition-all duration-500 font-light shadow-xl hover:scale-105 tracking-calm"
               >
-                Analyze Another Space
+                Restart Demo
               </button>
             </div>
           </div>
