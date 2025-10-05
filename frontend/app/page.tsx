@@ -8,6 +8,7 @@ export default function Home() {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
   const [showLoading, setShowLoading] = useState(false);
+  const [mascotHovered, setMascotHovered] = useState(false);
 
   const handleBeginJourney = () => {
     setIsNavigating(true);
@@ -117,6 +118,18 @@ export default function Home() {
         {/* Subtle scroll indicator with pink accent */}
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2">
           <div className="w-px h-16 bg-gradient-to-b from-transparent via-zen-petal/50 to-transparent"></div>
+        </div>
+
+        {/* Mascot peeking from bottom right */}
+        <div className="fixed bottom-[-9px] right-48 pointer-events-none">
+          <Image
+            src="/mascot_peeking_1.png"
+            alt="Feng Shui Mascot"
+            width={200}
+            height={200}
+            className="object-contain"
+            priority
+          />
         </div>
       </div>
     </main>
