@@ -7,6 +7,7 @@ import { Auth0Button } from '@/components/Auth0Button';
 import { EchoSignIn } from '@/components/EchoSignIn';
 import { FengShuiVisualization } from '@/components/FengShuiVisualization';
 import { CircularProgress } from '@/components/CircularProgress';
+import Embedded3DViewer from '@/components/Embedded3DViewer';
 
 interface Tooltip {
   object_class: string;
@@ -28,6 +29,10 @@ interface AnalysisResult {
   suggestions: string[];
   detected_objects: any[];
   tooltips: Tooltip[];
+  model_3d: {
+    model_id: string;
+    status: string;
+  };
 }
 
 export default function UploadPage() {
@@ -469,6 +474,11 @@ export default function UploadPage() {
                   ))}
                 </ul>
               </div>
+
+              {/* 3D Model Viewer - Embedded at bottom */}
+              {result.model_3d && result.model_3d.model_id && (
+                <Embedded3DViewer modelId={result.model_3d.model_id} />
+              )}
             </div>
           )}
         </div>

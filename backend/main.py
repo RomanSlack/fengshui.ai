@@ -15,14 +15,17 @@ import os
 import logging
 import asyncio
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, UploadFile, File, BackgroundTasks
+from datetime import datetime
+from pathlib import Path
+from fastapi import FastAPI, UploadFile, File, BackgroundTasks, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 
 from object_detection import detect_room_objects
-from model_generation import generate_room_model
+from model_generation import generate_room_model, RENDER_OUTPUT_DIR
 from blender_service import start_blender_service, stop_blender_service, is_blender_service_running
 
 # Configure logging
@@ -31,6 +34,10 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Global storage for 3D model generation status
+# Format: {model_id: {'status': 'pending'|'processing'|'completed'|'failed', 'filename': str, 'error': str}}
+model_generation_status = {}
 
 
 # Lifespan context manager for startup/shutdown events
@@ -149,14 +156,22 @@ def call_gemini_fengshui(image_data: bytes, detected_objects: list = None) -> di
     return response.text
 
 
-async def generate_3d_model_background(image_data: bytes):
+async def generate_3d_model_background(image_data: bytes, model_id: str):
     """Background task to generate 3D model without blocking the response."""
     try:
-        logger.info("Starting background 3D model generation...")
+        logger.info(f"Starting background 3D model generation for model_id: {model_id}")
+
+        # Update status to processing
+        model_generation_status[model_id] = {'status': 'processing', 'filename': None, 'error': None}
 
         # Check if service is available
         if not is_blender_service_running():
             logger.warning("Blender service not running - skipping 3D generation")
+            model_generation_status[model_id] = {
+                'status': 'failed',
+                'filename': None,
+                'error': 'Blender service not running'
+            }
             return
 
         # Run in executor to avoid blocking
@@ -171,20 +186,39 @@ async def generate_3d_model_background(image_data: bytes):
         )
 
         if fbx_path:
+            # Extract filename from path
+            filename = Path(fbx_path).name
             logger.info(f"✓ 3D model generated: {fbx_path}")
+            model_generation_status[model_id] = {
+                'status': 'completed',
+                'filename': filename,
+                'error': None
+            }
         else:
             logger.warning(f"3D model generation failed: {message}")
+            model_generation_status[model_id] = {
+                'status': 'failed',
+                'filename': None,
+                'error': message
+            }
 
     except Exception as e:
         logger.error(f"Background 3D generation error: {e}")
+        model_generation_status[model_id] = {
+            'status': 'failed',
+            'filename': None,
+            'error': str(e)
+        }
 
 
 @app.post("/analyze/")
-async def analyze_image(file: UploadFile = File(...)):
+async def analyze_image(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     import json
 
-async def analyze_image(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     image_data = await file.read()
+
+    # Generate unique model_id for tracking 3D generation
+    model_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
 
     # Run object detection with automatic saving to results folder
     try:
@@ -222,11 +256,13 @@ async def analyze_image(background_tasks: BackgroundTasks, file: UploadFile = Fi
             "object_tooltips": []
         }
 
-    # Start 3D model generation in background (non-blocking)
-    background_tasks.add_task(generate_3d_model_background, image_data)
-    logger.info("3D model generation queued as background task")
+    # Initialize 3D model status
+    model_generation_status[model_id] = {'status': 'pending', 'filename': None, 'error': None}
 
-    return {"result": result}
+    # Start 3D model generation in background (non-blocking)
+    background_tasks.add_task(generate_3d_model_background, image_data, model_id)
+    logger.info(f"3D model generation queued as background task with ID: {model_id}")
+
     # Combine tooltips with object coordinates
     tooltips_with_coords = []
     for tooltip in feng_shui_analysis.get("object_tooltips", []):
@@ -258,10 +294,63 @@ async def analyze_image(background_tasks: BackgroundTasks, file: UploadFile = Fi
             "total_objects": len(detected_objects),
             "json_path": json_path,
             "image_path": image_path
+        },
+        "model_3d": {
+            "model_id": model_id,
+            "status": "pending"
         }
     }
 
     return response
+
+
+@app.get("/models/status/{model_id}")
+async def get_model_status(model_id: str):
+    """
+    Check the status of 3D model generation.
+
+    Returns:
+        {
+            "status": "pending" | "processing" | "completed" | "failed",
+            "filename": str | null,
+            "error": str | null
+        }
+    """
+    if model_id not in model_generation_status:
+        raise HTTPException(status_code=404, detail="Model ID not found")
+
+    return model_generation_status[model_id]
+
+
+@app.get("/models/{filename}")
+async def get_model_file(filename: str):
+    """
+    Download a generated 3D model file.
+
+    Args:
+        filename: Name of the FBX file (e.g., room_model_20251004_123456_789012.fbx)
+
+    Returns:
+        FileResponse with the FBX file
+    """
+    # Security: Only allow alphanumeric, underscores, dots, and hyphens
+    if not filename.replace('_', '').replace('.', '').replace('-', '').isalnum():
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    # Ensure .fbx extension
+    if not filename.endswith('.fbx'):
+        raise HTTPException(status_code=400, detail="Only FBX files are supported")
+
+    file_path = RENDER_OUTPUT_DIR / filename
+
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Model file not found")
+
+    return FileResponse(
+        path=str(file_path),
+        media_type="application/octet-stream",
+        filename=filename
+    )
 
 
 if __name__ == "__main__":
