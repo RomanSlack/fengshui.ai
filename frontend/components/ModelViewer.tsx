@@ -49,65 +49,59 @@ function GLTFModel({ url, roughness, metalness }: { url: string; roughness: numb
   );
 }
 
-// Helper hook to fetch FBX with ngrok headers
-function useFBXWithHeaders(url: string) {
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+// Cache for fetch promises to enable Suspense
+const fetchCache = new Map<string, Promise<string>>();
 
-  useEffect(() => {
-    let isMounted = true;
+// Helper to fetch FBX with ngrok headers - returns a promise that resolves to blob URL
+function fetchFBXWithHeaders(url: string): Promise<string> {
+  if (fetchCache.has(url)) {
+    return fetchCache.get(url)!;
+  }
 
-    const fetchFBX = async () => {
-      try {
-        console.log('[FBX] Fetching model from:', url);
+  const promise = (async () => {
+    try {
+      console.log('[FBX] Fetching model from:', url);
 
-        const isNgrok = url.includes('ngrok');
-        const headers: HeadersInit = {};
-        if (isNgrok) {
-          headers['ngrok-skip-browser-warning'] = 'true';
-        }
-
-        const response = await fetch(url, { headers });
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch FBX: ${response.status} ${response.statusText}`);
-        }
-
-        const blob = await response.blob();
-        const objectUrl = URL.createObjectURL(blob);
-
-        if (isMounted) {
-          console.log('[FBX] Created blob URL:', objectUrl);
-          setBlobUrl(objectUrl);
-        } else {
-          URL.revokeObjectURL(objectUrl);
-        }
-      } catch (err) {
-        console.error('[FBX] Fetch error:', err);
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Failed to load model');
-        }
+      const isNgrok = url.includes('ngrok');
+      const headers: HeadersInit = {};
+      if (isNgrok) {
+        headers['ngrok-skip-browser-warning'] = 'true';
       }
-    };
 
-    fetchFBX();
+      const response = await fetch(url, { headers });
 
-    return () => {
-      isMounted = false;
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch FBX: ${response.status} ${response.statusText}`);
       }
-    };
-  }, [url]);
 
-  return { blobUrl, error };
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      console.log('[FBX] Created blob URL:', objectUrl);
+      return objectUrl;
+    } catch (err) {
+      console.error('[FBX] Fetch error:', err);
+      fetchCache.delete(url); // Remove from cache on error so it can be retried
+      throw err;
+    }
+  })();
+
+  fetchCache.set(url, promise);
+  return promise;
 }
 
 function FBXModel({ url, roughness, metalness }: { url: string; roughness: number; metalness: number }) {
-  const { blobUrl, error } = useFBXWithHeaders(url);
+  // Fetch blob URL with Suspense support
+  const blobUrlPromise = fetchFBXWithHeaders(url);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
 
-  // useLoader will suspend until the model is loaded
-  const fbx = useLoader(FBXLoader, blobUrl || '', (loader) => {
+  // Wait for blob URL before rendering
+  if (!blobUrl) {
+    blobUrlPromise.then(setBlobUrl);
+    throw blobUrlPromise; // Suspend until fetch completes
+  }
+
+  // Now we can safely use the loader with the blob URL
+  const fbx = useLoader(FBXLoader, blobUrl, (loader) => {
     const manager = new THREE.LoadingManager();
     manager.setURLModifier((textureUrl) => {
       if (textureUrl.startsWith('/') || textureUrl.includes(':\\')) {
