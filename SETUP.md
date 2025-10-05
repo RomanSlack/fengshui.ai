@@ -7,7 +7,7 @@ This app uses **Echo AI** for seamless payment integration and monetization!
 ### How It Works
 
 1. **Free Trial**: Users get 3 free feng shui analyses without signing in
-2. **Sign In**: After 3 free requests, users must sign in with Echo
+2. **Sign In**: After 3 free requests, users must sign in with Echo 
 3. **Pay-Per-Use**: Users purchase credits ($5 = 50 analyses)
 4. **Automatic Deduction**: Each analysis deducts 100 credits (= $0.10)
 5. **Universal Balance**: Credits work across all Echo-powered apps!
