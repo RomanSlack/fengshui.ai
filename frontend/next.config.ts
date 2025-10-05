@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['i.pravatar.cc', 'lh3.googleusercontent.com', 'drive.google.com'],
+    domains: ['i.pravatar.cc', 'lh3.googleusercontent.com', 'raw.githubusercontent.com'],
   },
   serverExternalPackages: [],
   webpack: (config) => {

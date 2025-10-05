@@ -73,8 +73,8 @@ export default function HybridViewer({
     setModelStatus('processing');
 
     const loadTimer = setTimeout(() => {
-      // Google Drive direct download link for demo 3D model
-      const externalModelUrl = 'https://drive.google.com/uc?export=download&id=1OhKe-pec3FzEcVBhaUZDAZBw-4d_o23H';
+      // GitHub raw content URL - CORS-friendly direct download
+      const externalModelUrl = 'https://raw.githubusercontent.com/RomanSlack/fengshui.ai/demo/frontend/public/demo/model.fbx';
 
       setModelUrl(externalModelUrl);
       setModelStatus('completed');
