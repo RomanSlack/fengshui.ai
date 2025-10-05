@@ -54,7 +54,51 @@ function FBXModelWithMarkers({
   imageHeight: number;
   onMarkersReady: (markers: TooltipMarker[]) => void;
 }) {
-  const fbx = useLoader(FBXLoader, url, (loader) => {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch FBX with custom headers for ngrok support
+  useEffect(() => {
+    const fetchFBX = async () => {
+      try {
+        console.log('[FBX] Fetching model from:', url);
+
+        // Check if URL contains ngrok
+        const isNgrok = url.includes('ngrok');
+        const headers: HeadersInit = {};
+        if (isNgrok) {
+          headers['ngrok-skip-browser-warning'] = 'true';
+        }
+
+        const response = await fetch(url, { headers });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch FBX: ${response.status} ${response.statusText}`);
+        }
+
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        console.log('[FBX] Created blob URL:', objectUrl);
+        setBlobUrl(objectUrl);
+      } catch (err) {
+        console.error('[FBX] Fetch error:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load model');
+      }
+    };
+
+    fetchFBX();
+  }, [url]);
+
+  // Cleanup blob URL when component unmounts
+  useEffect(() => {
+    return () => {
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
+      }
+    };
+  }, [blobUrl]);
+
+  const fbx = useLoader(FBXLoader, blobUrl || '', (loader) => {
     const manager = new THREE.LoadingManager();
     manager.setURLModifier((textureUrl) => {
       if (textureUrl.startsWith('/') || textureUrl.includes(':\\')) {
@@ -64,7 +108,19 @@ function FBXModelWithMarkers({
       return textureUrl;
     });
     loader.manager = manager;
+  }, undefined, (err) => {
+    console.error('[FBX] Loader error:', err);
+    setError('Failed to parse FBX file');
   });
+
+  if (error) {
+    throw new Error(error);
+  }
+
+  if (!blobUrl) {
+    // Return null while loading
+    return null;
+  }
 
   const { camera } = useThree();
   const meshRef = useRef<THREE.Group>(null);

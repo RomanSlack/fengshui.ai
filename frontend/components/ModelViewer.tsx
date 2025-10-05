@@ -50,7 +50,55 @@ function GLTFModel({ url, roughness, metalness }: { url: string; roughness: numb
 }
 
 function FBXModel({ url, roughness, metalness }: { url: string; roughness: number; metalness: number }) {
-  const fbx = useLoader(FBXLoader, url, (loader) => {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch FBX with custom headers for ngrok support
+  useEffect(() => {
+    const fetchFBX = async () => {
+      try {
+        console.log('[FBX] Fetching model from:', url);
+
+        // Check if URL contains ngrok
+        const isNgrok = url.includes('ngrok');
+        const headers: HeadersInit = {};
+        if (isNgrok) {
+          headers['ngrok-skip-browser-warning'] = 'true';
+        }
+
+        const response = await fetch(url, { headers });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch FBX: ${response.status} ${response.statusText}`);
+        }
+
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        console.log('[FBX] Created blob URL:', objectUrl);
+        setBlobUrl(objectUrl);
+      } catch (err) {
+        console.error('[FBX] Fetch error:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load model');
+      }
+    };
+
+    fetchFBX();
+
+    return () => {
+      // Cleanup will be handled when component unmounts or url changes
+    };
+  }, [url]);
+
+  // Cleanup blob URL when component unmounts
+  useEffect(() => {
+    return () => {
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
+      }
+    };
+  }, [blobUrl]);
+
+  const fbx = useLoader(FBXLoader, blobUrl || '', (loader) => {
     // Configure loader to handle texture paths
     const manager = new THREE.LoadingManager();
     manager.setURLModifier((textureUrl) => {
@@ -62,7 +110,19 @@ function FBXModel({ url, roughness, metalness }: { url: string; roughness: numbe
       return textureUrl;
     });
     loader.manager = manager;
+  }, undefined, (err) => {
+    console.error('[FBX] Loader error:', err);
+    setError('Failed to parse FBX file');
   });
+
+  if (error) {
+    throw new Error(error);
+  }
+
+  if (!blobUrl) {
+    // Return null while loading
+    return null;
+  }
 
   useEffect(() => {
     // Ensure textures are loaded and materials are set up correctly
