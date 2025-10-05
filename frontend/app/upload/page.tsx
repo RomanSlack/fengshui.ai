@@ -310,7 +310,7 @@ export default function UploadPage() {
                   <p className="text-red-700 text-sm font-light">{error}</p>
                   {showPaymentPrompt && !isAuth0Authenticated && (
                     <p className="text-gray-700 text-sm mt-2 font-light">
-                      Sign in with Google to continue using Feng Shui AI!
+                      Sign in with Google to continue using FengShui.fy!
                     </p>
                   )}
                 </div>
@@ -380,6 +380,10 @@ export default function UploadPage() {
                     <div className="w-32 h-32 rounded-full border-4 border-zen-sage/20 border-t-zen-sage animate-spin"></div>
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="w-20 h-20 rounded-full bg-zen-sage/10 animate-pulse"></div>
+                      {/* Breathing green dot */}
+                      <div className="absolute">
+                        <div className="w-4 h-4 rounded-full bg-zen-sage animate-pulse"></div>
+                      </div>
                     </div>
                   </div>
 
