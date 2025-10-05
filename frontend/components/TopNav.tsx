@@ -144,13 +144,26 @@ export function TopNav({ onNavigate }: TopNavProps = {}) {
                 onClick={() => setShowDropdown(!showDropdown)}
                 className="flex items-center gap-2 hover:opacity-80 transition-opacity duration-200"
               >
-                {user?.picture && (
+                {user?.picture ? (
                   <img
                     src={user.picture}
                     alt={firstName}
-                    className="w-10 h-10 rounded-full border-2 border-zen-sage/30 shadow-sm"
+                    className="w-10 h-10 rounded-full border-2 border-zen-sage/30 shadow-sm object-cover"
+                    onError={(e) => {
+                      // Fallback to initials if image fails to load
+                      e.currentTarget.style.display = 'none';
+                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.style.display = 'flex';
+                    }}
                   />
-                )}
+                ) : null}
+                {/* Fallback avatar with initials */}
+                <div
+                  className="w-10 h-10 rounded-full border-2 border-zen-sage/30 shadow-sm bg-gradient-to-br from-zen-sage to-zen-pine flex items-center justify-center text-white font-medium text-sm"
+                  style={{ display: user?.picture ? 'none' : 'flex' }}
+                >
+                  {firstName.charAt(0).toUpperCase()}
+                </div>
                 <div className="text-left hidden md:block">
                   <p className="text-sm font-light text-gray-700">
                     Hi, <span className="font-medium text-zen-pine">{firstName}</span>
