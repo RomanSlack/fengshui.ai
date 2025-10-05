@@ -29,6 +29,9 @@ from model_generation import generate_room_model, RENDER_OUTPUT_DIR
 from blender_service import start_blender_service, stop_blender_service, is_blender_service_running
 from elevenlabs import ElevenLabs
 
+# Load environment variables first
+load_dotenv()
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -39,6 +42,27 @@ logger = logging.getLogger(__name__)
 # Global storage for 3D model generation status
 # Format: {model_id: {'status': 'pending'|'processing'|'completed'|'failed', 'filename': str, 'error': str}}
 model_generation_status = {}
+
+
+def get_allowed_origins() -> list[str]:
+    """
+    Get allowed CORS origins from environment variable.
+
+    Returns:
+        List of allowed origin URLs. Defaults to localhost:3000 if not configured.
+    """
+    origins_env = os.environ.get("ALLOWED_ORIGINS", "")
+
+    if origins_env:
+        # Split by comma and strip whitespace
+        origins = [origin.strip() for origin in origins_env.split(",") if origin.strip()]
+        logger.info(f"CORS configured with origins: {origins}")
+        return origins
+
+    # Default to localhost for development
+    default_origins = ["http://localhost:3000"]
+    logger.info(f"CORS using default origins: {default_origins}")
+    return default_origins
 
 
 # Lifespan context manager for startup/shutdown events
@@ -63,20 +87,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-
-
-# Allow CORS for frontend
+# Configure CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Frontend URL
+    allow_origins=get_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Gemini client
-# Load .env from current directory or parent directory
-load_dotenv()  # Looks in current directory first, then parent
 
 # Initialize client lazily to avoid cleanup errors
 _client = None

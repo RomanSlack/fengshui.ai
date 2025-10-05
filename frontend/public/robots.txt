@@ -1,0 +1,8 @@
+# robots.txt for FengShui.ai
+
+# Allow all search engines to crawl the site
+User-agent: *
+Allow: /
+
+# Sitemap location (update with your production URL)
+Sitemap: http://localhost:3000/sitemap.xml
