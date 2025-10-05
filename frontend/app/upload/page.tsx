@@ -49,7 +49,19 @@ export default function UploadPage() {
   const [balance, setBalance] = useState<number | null>(null);
   const [showPaymentPrompt, setShowPaymentPrompt] = useState(false);
 
+  // TESTING: Paywall toggle (disable for testing)
+  const [paywallEnabled, setPaywallEnabled] = useState(() => {
+    // Load from localStorage (persists across refreshes)
+    const stored = localStorage.getItem('fengshui_paywall_enabled');
+    return stored === null ? true : stored === 'true'; // Default: enabled
+  });
+
   const FREE_REQUESTS = 3;
+
+  // Save paywall preference
+  useEffect(() => {
+    localStorage.setItem('fengshui_paywall_enabled', paywallEnabled.toString());
+  }, [paywallEnabled]);
 
   // Load request count from localStorage
   useEffect(() => {
@@ -90,18 +102,21 @@ export default function UploadPage() {
       return;
     }
 
-    // Check if user has free requests left (not signed in with Auth0)
-    if (!isAuth0Authenticated && requestCount >= FREE_REQUESTS) {
-      setShowPaymentPrompt(true);
-      setError("You've used your 3 free analyses. Please sign in with Google to continue!");
-      return;
-    }
+    // TESTING: Skip paywall checks if disabled
+    if (paywallEnabled) {
+      // Check if user has free requests left (not signed in with Auth0)
+      if (!isAuth0Authenticated && requestCount >= FREE_REQUESTS) {
+        setShowPaymentPrompt(true);
+        setError("You've used your 3 free analyses. Please sign in with Google to continue!");
+        return;
+      }
 
-    // Check if authenticated user has balance (for Echo payments)
-    if (isAuth0Authenticated && isEchoAuthenticated && balance !== null && balance <= 0) {
-      setShowPaymentPrompt(true);
-      setError("Insufficient balance. Please add credits to continue!");
-      return;
+      // Check if authenticated user has balance (for Echo payments)
+      if (isAuth0Authenticated && isEchoAuthenticated && balance !== null && balance <= 0) {
+        setShowPaymentPrompt(true);
+        setError("Insufficient balance. Please add credits to continue!");
+        return;
+      }
     }
 
     setLoading(true);
@@ -124,18 +139,20 @@ export default function UploadPage() {
       const data = await response.json();
       setResult(data);
 
-      // Increment request count and deduct balance
-      if (!isAuth0Authenticated) {
-        // Not signed in - count free requests
-        const newCount = requestCount + 1;
-        setRequestCount(newCount);
-        localStorage.setItem('fengshui_request_count', newCount.toString());
-      } else if (isAuth0Authenticated && isEchoAuthenticated && echoClient) {
-        // Signed in with both Auth0 and Echo - deduct from balance
-        await echoClient.balance.deduct({ amount: 100 });
-        // Refresh balance
-        const bal = await echoClient.balance.get();
-        setBalance(bal.balance);
+      // Increment request count and deduct balance (only if paywall enabled)
+      if (paywallEnabled) {
+        if (!isAuth0Authenticated) {
+          // Not signed in - count free requests
+          const newCount = requestCount + 1;
+          setRequestCount(newCount);
+          localStorage.setItem('fengshui_request_count', newCount.toString());
+        } else if (isAuth0Authenticated && isEchoAuthenticated && echoClient) {
+          // Signed in with both Auth0 and Echo - deduct from balance
+          await echoClient.balance.deduct({ amount: 100 });
+          // Refresh balance
+          const bal = await echoClient.balance.get();
+          setBalance(bal.balance);
+        }
       }
       // If Auth0 authenticated but not Echo, treat as unlimited (or implement your logic)
     } catch (err) {
@@ -170,14 +187,43 @@ export default function UploadPage() {
     <main className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8">
         {/* Header with Auth */}
-        <div className="max-w-7xl mx-auto mb-8 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Feng Shui AI</h1>
-            <p className="text-sm text-gray-500 mt-1">Powered by Auth0 + Echo</p>
+        <div className="max-w-7xl mx-auto mb-8">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Feng Shui AI</h1>
+              <p className="text-sm text-gray-500 mt-1">Powered by Auth0 + Echo</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Auth0Button />
+              {isAuth0Authenticated && <EchoSignIn />}
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Auth0Button />
-            {isAuth0Authenticated && <EchoSignIn />}
+
+          {/* Testing Toggle */}
+          <div className="mt-4 flex items-center justify-end gap-2 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <span className="text-xs font-medium text-yellow-800">
+              🧪 TESTING MODE
+            </span>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <span className="text-sm text-yellow-700">
+                Paywall {paywallEnabled ? 'ON' : 'OFF'}
+              </span>
+              <button
+                onClick={() => setPaywallEnabled(!paywallEnabled)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  paywallEnabled ? 'bg-green-600' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    paywallEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </label>
+            <span className="text-xs text-yellow-600">
+              {paywallEnabled ? '(Demo mode - paywall active)' : '(Testing - unlimited requests)'}
+            </span>
           </div>
         </div>
 
@@ -365,8 +411,8 @@ export default function UploadPage() {
                   <h3 className="text-2xl font-bold text-gray-900 mb-2">
                     🔍 Interactive Analysis
                   </h3>
-                  <p className="text-sm text-gray-600 mb-6">
-                    Click the info icons on the image to see specific feng shui insights for each object
+                  <p className="text-base text-gray-600 mb-6">
+                    Hover over or click the info icons on the image to see specific feng shui insights for each object
                   </p>
                   <FengShuiVisualization
                     imageUrl={preview}

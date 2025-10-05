@@ -137,6 +137,8 @@ export function FengShuiVisualization({
                     e.stopPropagation();
                     setClickedTooltip(clickedTooltip === index ? null : index);
                   }}
+                  onMouseEnter={() => setClickedTooltip(index)}
+                  onMouseLeave={() => setClickedTooltip(null)}
                 >
                   {/* Icon background circle */}
                   <circle
@@ -188,22 +190,26 @@ export function FengShuiVisualization({
                 {/* Tooltip Card - Positioned near object */}
                 {isActive && (
                   <foreignObject
-                    x={Math.max(10, Math.min(bbox.x1, imageDimensions.width - 320))}
+                    x={Math.max(10, Math.min(bbox.x1, imageDimensions.width - 380))}
                     y={Math.max(10, bbox.y2 + 10)}
-                    width="300"
-                    height="150"
+                    width="360"
+                    height="180"
                     className="pointer-events-auto"
                   >
-                    <div className={`p-4 rounded-lg shadow-2xl border-2 ${colors.cardBorder} ${colors.cardBg} ${colors.cardText} backdrop-blur-sm`}>
-                      <div className="flex items-start gap-2">
-                        <div className={`flex-shrink-0 w-8 h-8 ${colors.iconBg} text-white rounded-full flex items-center justify-center font-bold`}>
+                    <div
+                      className={`p-5 rounded-xl shadow-2xl border-3 ${colors.cardBorder} ${colors.cardBg} ${colors.cardText} backdrop-blur-sm`}
+                      onMouseEnter={() => setClickedTooltip(index)}
+                      onMouseLeave={() => setClickedTooltip(null)}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`flex-shrink-0 w-10 h-10 ${colors.iconBg} text-white rounded-full flex items-center justify-center font-bold text-lg`}>
                           {colors.icon}
                         </div>
                         <div className="flex-1">
-                          <div className="font-bold text-sm capitalize mb-1">
+                          <div className="font-bold text-lg capitalize mb-2">
                             {tooltip.object_class}
                           </div>
-                          <div className="text-xs leading-relaxed">
+                          <div className="text-base leading-relaxed">
                             {tooltip.message}
                           </div>
                         </div>
@@ -212,7 +218,7 @@ export function FengShuiVisualization({
                             e.stopPropagation();
                             setClickedTooltip(null);
                           }}
-                          className="text-gray-400 hover:text-gray-600 transition-colors"
+                          className="text-gray-400 hover:text-gray-600 transition-colors text-lg"
                         >
                           ✕
                         </button>
@@ -227,7 +233,7 @@ export function FengShuiVisualization({
       </div>
 
       {/* Legend at bottom */}
-      <div className="mt-4 flex flex-wrap gap-2 text-sm text-gray-600">
+      <div className="mt-4 flex flex-wrap gap-3 text-sm text-gray-600">
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 rounded-full bg-green-500"></div>
           <span>Good Feng Shui</span>
@@ -240,8 +246,8 @@ export function FengShuiVisualization({
           <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
           <span>Can Improve</span>
         </div>
-        <div className="ml-auto text-xs text-gray-400">
-          💡 Click the info icons to see details
+        <div className="ml-auto text-sm text-gray-500 font-medium">
+          💡 Hover or click the info icons to see details
         </div>
       </div>
     </div>
