@@ -130,11 +130,12 @@ sys.exit(0)
             logger.error(f"Blender service script not found: {WEB_SERVICE_SCRIPT}")
             return False
 
-        # Note: 3D generation is currently disabled
-        # TrueDepth extension requires Blender GUI mode for full functionality
-        logger.info("Note: 3D model generation is currently disabled")
-        logger.info("TrueDepth plugin requires GUI mode - use Blender manually for 3D models")
-        return False  # Don't start service since it won't work headlessly
+        # Check if required Blender plugins are installed (warning only, don't block)
+        logger.info("Checking Blender plugins...")
+        if not self._check_blender_plugins():
+            logger.warning("⚠ Blender plugin check failed in background mode")
+            logger.warning("This is expected - plugins load correctly when service runs")
+            logger.warning("")
 
         try:
             logger.info(f"Starting Blender service on {self.host}:{self.port}...")

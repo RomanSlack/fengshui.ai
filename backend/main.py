@@ -116,18 +116,6 @@ def call_gemini_fengshui(image_data: bytes) -> str:
 
 async def generate_3d_model_background(image_data: bytes):
     """Background task to generate 3D model without blocking the response."""
-    logger.info("3D model generation is currently disabled")
-    logger.info("TrueDepth plugin requires GUI mode for full functionality")
-    logger.info("To generate 3D models:")
-    logger.info("  1. Open Blender in GUI mode")
-    logger.info("  2. Use TrueDepth extension with saved images from backend/results/")
-    logger.info("  3. Export FBX files to backend/room_renders/")
-    return
-
-    # NOTE: Headless 3D generation disabled due to TrueDepth UI dependencies
-    # TrueDepth extension uses context.area.tag_redraw() which requires GUI mode
-    # Uncomment below to re-enable (may fail in headless mode)
-    """
     try:
         logger.info("Starting background 3D model generation...")
 
@@ -143,7 +131,7 @@ async def generate_3d_model_background(image_data: bytes):
             generate_room_model,
             image_data,
             'vits',  # Fast model
-            'gpu',   # Use GPU for faster processing
+            'cpu',   # Use CPU (GPU may have CUDA issues in background)
             True     # Save results
         )
 
@@ -154,7 +142,6 @@ async def generate_3d_model_background(image_data: bytes):
 
     except Exception as e:
         logger.error(f"Background 3D generation error: {e}")
-    """
 
 
 @app.post("/analyze/")
