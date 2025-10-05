@@ -46,6 +46,7 @@ export default function UploadPage() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showMascotWelcome, setShowMascotWelcome] = useState(true);
+  const [mascotFadingOut, setMascotFadingOut] = useState(false);
 
   // Auth0 integration
   const { isAuthenticated: isAuth0Authenticated, user: auth0User } = useAuth0();
@@ -223,7 +224,10 @@ export default function UploadPage() {
   };
 
   const handleContinueFromMascot = () => {
-    setShowMascotWelcome(false);
+    setMascotFadingOut(true);
+    setTimeout(() => {
+      setShowMascotWelcome(false);
+    }, 700); // Wait for fade-out animation to complete
   };
 
   return (
@@ -268,14 +272,16 @@ export default function UploadPage() {
           <h1 className="text-5xl font-serif font-light text-zen-pine tracking-calm">
             Feng Shui Analysis
           </h1>
-          <p className="text-lg text-zen-earth font-light leading-relaxed max-w-2xl mx-auto">
-            Upload a photo of your room to receive personalized feng shui insights and harmonize your space
-          </p>
+          {!showMascotWelcome && (
+            <p className="text-lg text-zen-earth font-light leading-relaxed max-w-2xl mx-auto">
+              Upload a photo of your room to receive personalized feng shui insights and harmonize your space
+            </p>
+          )}
         </div>
 
         {/* Step 0: Mascot Welcome - Initial greeting */}
         {showMascotWelcome && !preview && !loading && !result && (
-          <div className={`flex flex-col items-center space-y-8 transition-opacity duration-700 ease-out ${showMascotWelcome ? 'opacity-100' : 'opacity-0'}`}>
+          <div className={`flex flex-col items-center space-y-8 transition-opacity duration-700 ease-out ${mascotFadingOut ? 'opacity-0' : 'opacity-100'}`}>
             {/* Speech Bubble */}
             <div className="relative max-w-xl mb-4">
               <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 border border-zen-sage/20">

@@ -10,7 +10,7 @@ export default function Home() {
   const [showLoading, setShowLoading] = useState(false);
   const [mascotHovered, setMascotHovered] = useState(false);
   const [fadeIn, setFadeIn] = useState(false);
-  const [showHeart, setShowHeart] = useState(false);
+  const [hearts, setHearts] = useState<{ id: number; x: number; y: number; duration: number }[]>([]);
 
   // Trigger fade-in on mount
   useEffect(() => {
@@ -33,10 +33,29 @@ export default function Home() {
   };
 
   const handleMascotClick = () => {
-    setShowHeart(true);
+    const heartId = Date.now();
+    // Randomize direction and distance
+    const randomX = 40 + Math.random() * 40; // 40-80px horizontal
+    const randomY = -60 - Math.random() * 40; // -60 to -100px vertical
+    const randomDuration = 1.2 + Math.random() * 0.6; // 1.2-1.8s duration
+
+    const newHeart = {
+      id: heartId,
+      x: randomX,
+      y: randomY,
+      duration: randomDuration
+    };
+
+    setHearts(prev => {
+      const newHearts = [...prev, newHeart];
+      // Keep only the last 10 hearts
+      return newHearts.slice(-10);
+    });
+
+    // Remove this specific heart after animation completes
     setTimeout(() => {
-      setShowHeart(false);
-    }, 1500); // Heart disappears after animation completes
+      setHearts(prev => prev.filter(heart => heart.id !== heartId));
+    }, randomDuration * 1000);
   };
 
   if (showLoading) {
@@ -156,9 +175,17 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Heart animation on click */}
-          {showHeart && (
-            <div className="absolute top-8 left-1/2 -translate-x-1/2 animate-heart-pop pointer-events-none">
+          {/* Heart animations on click - multiple hearts can spawn */}
+          {hearts.map((heart) => (
+            <div
+              key={heart.id}
+              className="absolute top-8 left-1/2 -translate-x-1/2 pointer-events-none"
+              style={{
+                animation: `heart-pop ${heart.duration}s linear forwards`,
+                '--heart-x': `${heart.x}px`,
+                '--heart-y': `${heart.y}px`
+              } as React.CSSProperties & { '--heart-x': string; '--heart-y': string }}
+            >
               <svg
                 className="w-8 h-8 text-red-500"
                 fill="currentColor"
@@ -167,7 +194,7 @@ export default function Home() {
                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
               </svg>
             </div>
-          )}
+          ))}
 
           <Image
             src={mascotHovered ? "/mascot_peeking_eyes_closed_action.png" : "/mascot_peeking_1.png"}

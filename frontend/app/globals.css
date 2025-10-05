@@ -92,7 +92,7 @@
     animation: wave-2 4s ease-in-out infinite 1s;
   }
 
-  /* Heart pop animation - smooth constant drift with fade */
+  /* Heart pop animation - smooth constant drift with fade (uses CSS variables for randomization) */
   @keyframes heart-pop {
     0% {
       transform: translate(0, 0) scale(0.8);
@@ -100,15 +100,11 @@
     }
     15% {
       opacity: 1;
-      transform: translate(5px, -10px) scale(1);
+      transform: translate(calc(var(--heart-x) * 0.1), calc(var(--heart-y) * 0.15)) scale(1);
     }
     100% {
-      transform: translate(60px, -80px) scale(1);
+      transform: translate(var(--heart-x), var(--heart-y)) scale(1);
       opacity: 0;
     }
-  }
-
-  .animate-heart-pop {
-    animation: heart-pop 1.5s linear forwards;
   }
 }
