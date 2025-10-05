@@ -8,7 +8,7 @@ import { TopNav } from '@/components/TopNav';
 import { CircularProgress } from '@/components/CircularProgress';
 import HybridViewer from '@/components/HybridViewer';
 import Image from 'next/image';
-import { API_ENDPOINTS } from '@/utils/config';
+import { API_ENDPOINTS, getApiHeaders } from '@/utils/config';
 
 interface Tooltip {
   object_class: string;
@@ -201,6 +201,7 @@ export default function UploadPage() {
       const response = await fetch(API_ENDPOINTS.analyze, {
         method: "POST",
         body: formData,
+        headers: getApiHeaders(),
       });
 
       if (!response.ok) {
@@ -314,6 +315,7 @@ export default function UploadPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...getApiHeaders(),
         },
         body: JSON.stringify({ text: result.overall_analysis }),
       });

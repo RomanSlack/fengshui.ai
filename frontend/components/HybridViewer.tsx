@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FengShuiVisualization } from './FengShuiVisualization';
 import dynamic from 'next/dynamic';
-import { API_ENDPOINTS } from '@/utils/config';
+import { API_ENDPOINTS, getApiHeaders } from '@/utils/config';
 
 const ModelViewer3DWithTooltips = dynamic(() => import('./ModelViewer3DWithTooltips'), {
   ssr: false,
@@ -78,7 +78,9 @@ export default function HybridViewer({
         const url = API_ENDPOINTS.modelStatus(modelId);
         console.log('[3D Model] Polling status:', url);
 
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          headers: getApiHeaders(),
+        });
 
         if (!response.ok) {
           const errorText = await response.text();

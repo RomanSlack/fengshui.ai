@@ -12,6 +12,30 @@ export const getApiUrl = (): string => {
 };
 
 /**
+ * Check if the API URL is an ngrok URL
+ * @returns true if using ngrok, false otherwise
+ */
+export const isNgrokUrl = (): boolean => {
+  const url = getApiUrl();
+  return url.includes('ngrok');
+};
+
+/**
+ * Get default headers for API requests
+ * Includes ngrok-skip-browser-warning for ngrok URLs
+ */
+export const getApiHeaders = (): HeadersInit => {
+  const headers: HeadersInit = {};
+
+  // ngrok requires this header to skip the browser warning interstitial
+  if (isNgrokUrl()) {
+    headers['ngrok-skip-browser-warning'] = 'true';
+  }
+
+  return headers;
+};
+
+/**
  * API endpoints configuration
  */
 export const API_ENDPOINTS = {
