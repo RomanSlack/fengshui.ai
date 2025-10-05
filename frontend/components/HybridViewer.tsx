@@ -75,13 +75,19 @@ export default function HybridViewer({
 
     const checkStatus = async () => {
       try {
-        const response = await fetch(API_ENDPOINTS.modelStatus(modelId));
+        const url = API_ENDPOINTS.modelStatus(modelId);
+        console.log('[3D Model] Polling status:', url);
+
+        const response = await fetch(url);
 
         if (!response.ok) {
-          throw new Error('Failed to check model status');
+          const errorText = await response.text();
+          console.error('[3D Model] Status check failed:', response.status, errorText);
+          throw new Error(`Failed to check model status: ${response.status} ${errorText}`);
         }
 
         const data = await response.json();
+        console.log('[3D Model] Status response:', data);
 
         if (!isActive) return;
 
@@ -90,6 +96,7 @@ export default function HybridViewer({
         if (data.status === 'completed' && data.filename) {
           const fileUrl = API_ENDPOINTS.modelDownload(data.filename);
           setModelUrl(fileUrl);
+          console.log('[3D Model] Model ready:', fileUrl);
 
           if (interval) {
             clearInterval(interval);
@@ -97,6 +104,7 @@ export default function HybridViewer({
           }
         } else if (data.status === 'failed') {
           setError(data.error || 'Model generation failed');
+          console.error('[3D Model] Generation failed:', data.error);
 
           if (interval) {
             clearInterval(interval);
@@ -104,7 +112,12 @@ export default function HybridViewer({
           }
         }
       } catch (err) {
-        console.error('Error checking model status:', err);
+        console.error('[3D Model] Error checking model status:', err);
+        // Set error state so user knows something went wrong
+        if (isActive) {
+          setError(err instanceof Error ? err.message : 'Failed to check model status');
+          setModelStatus('failed');
+        }
       }
     };
 

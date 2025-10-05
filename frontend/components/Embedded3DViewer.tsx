@@ -43,13 +43,19 @@ export default function Embedded3DViewer({ modelId }: Embedded3DViewerProps) {
     // Start polling for model status
     const checkStatus = async () => {
       try {
-        const response = await fetch(API_ENDPOINTS.modelStatus(modelId));
+        const url = API_ENDPOINTS.modelStatus(modelId);
+        console.log('[3D Model] Polling status:', url);
+
+        const response = await fetch(url);
 
         if (!response.ok) {
-          throw new Error('Failed to check model status');
+          const errorText = await response.text();
+          console.error('[3D Model] Status check failed:', response.status, errorText);
+          throw new Error(`Failed to check model status: ${response.status}`);
         }
 
         const data = await response.json();
+        console.log('[3D Model] Status response:', data);
 
         if (!isActive) return;
 
@@ -59,6 +65,7 @@ export default function Embedded3DViewer({ modelId }: Embedded3DViewerProps) {
           // Model is ready - set the URL
           const fileUrl = API_ENDPOINTS.modelDownload(data.filename);
           setModelUrl(fileUrl);
+          console.log('[3D Model] Model ready:', fileUrl);
 
           // Stop polling
           if (interval) {

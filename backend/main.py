@@ -347,10 +347,15 @@ async def get_model_status(model_id: str):
             "error": str | null
         }
     """
+    logger.info(f"Model status check for: {model_id}")
+
     if model_id not in model_generation_status:
+        logger.warning(f"Model ID not found: {model_id}")
         raise HTTPException(status_code=404, detail="Model ID not found")
 
-    return model_generation_status[model_id]
+    status = model_generation_status[model_id]
+    logger.info(f"Model {model_id} status: {status}")
+    return status
 
 
 @app.get("/models/{filename}")
