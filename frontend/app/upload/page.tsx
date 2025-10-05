@@ -49,6 +49,8 @@ export default function UploadPage() {
   const [showPaywall, setShowPaywall] = useState(false);
   const [paywallFadingOut, setPaywallFadingOut] = useState(false);
   const [showEchoSuccess, setShowEchoSuccess] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
   // Auth0 integration
   const { isAuthenticated: isAuth0Authenticated, user: auth0User, error: auth0Error } = useAuth0();
@@ -288,6 +290,55 @@ export default function UploadPage() {
 
   const getMascotImage = (score: number): string => {
     return score >= 7 ? "/victory_good_mascot.png" : "/mascot_pointing_1.png";
+  };
+
+  const handlePlayAudio = async () => {
+    if (!result?.overall_analysis) return;
+
+    // If already playing, stop the audio
+    if (isPlayingAudio && audioUrl) {
+      const audioElement = document.querySelector('audio') as HTMLAudioElement;
+      if (audioElement) {
+        audioElement.pause();
+        audioElement.currentTime = 0;
+      }
+      setIsPlayingAudio(false);
+      return;
+    }
+
+    try {
+      setIsPlayingAudio(true);
+
+      const response = await fetch("http://localhost:8000/tts/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text: result.overall_analysis }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`TTS generation failed: ${response.statusText}`);
+      }
+
+      const audioBlob = await response.blob();
+      const url = URL.createObjectURL(audioBlob);
+      setAudioUrl(url);
+
+      // Create and play audio
+      const audio = new Audio(url);
+      audio.onended = () => {
+        setIsPlayingAudio(false);
+      };
+      audio.onerror = () => {
+        setIsPlayingAudio(false);
+        setError("Failed to play audio");
+      };
+      audio.play();
+    } catch (err) {
+      setIsPlayingAudio(false);
+      setError(err instanceof Error ? err.message : "Failed to generate audio");
+    }
   };
 
   return (
@@ -647,9 +698,37 @@ export default function UploadPage() {
                 <div className="flex flex-col md:flex-row items-center justify-center gap-12">
                   <CircularProgress score={result.score} size={220} strokeWidth={16} />
                   <div className="flex-1 text-center md:text-left max-w-xl">
-                    <h3 className="text-xl font-serif font-light text-zen-pine mb-4 tracking-calm">
-                      Overall Analysis
-                    </h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-xl font-serif font-light text-zen-pine tracking-calm">
+                        Overall Analysis
+                      </h3>
+                      <button
+                        onClick={handlePlayAudio}
+                        className="ml-4 p-2 rounded-full bg-zen-sage/10 hover:bg-zen-sage/20 transition-all duration-300 group"
+                        aria-label={isPlayingAudio ? "Stop audio" : "Play audio"}
+                      >
+                        {isPlayingAudio ? (
+                          <svg
+                            className="w-5 h-5 text-zen-sage"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <rect x="6" y="4" width="4" height="16" rx="1" />
+                            <rect x="14" y="4" width="4" height="16" rx="1" />
+                          </svg>
+                        ) : (
+                          <svg
+                            className="w-5 h-5 text-zen-sage group-hover:scale-110 transition-transform duration-300"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M11.553 3.064A.75.75 0 0112 3.75v16.5a.75.75 0 01-1.255.555L5.46 16H2.75A1.75 1.75 0 011 14.25v-4.5C1 8.784 1.784 8 2.75 8h2.71l5.285-4.805a.75.75 0 01.808-.13zM10.5 5.445l-4.245 3.86a.75.75 0 01-.505.195h-3a.25.25 0 00-.25.25v4.5c0 .138.112.25.25.25h3a.75.75 0 01.505.195l4.245 3.86V5.445z" />
+                            <path d="M18.718 4.222a.75.75 0 011.06 0c4.296 4.296 4.296 11.26 0 15.556a.75.75 0 01-1.06-1.06 9.5 9.5 0 000-13.436.75.75 0 010-1.06z" />
+                            <path d="M16.243 7.757a.75.75 0 10-1.061 1.061 4.5 4.5 0 010 6.364.75.75 0 001.06 1.06 6 6 0 000-8.485z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
                     <p className="text-zen-earth font-light leading-relaxed">
                       {result.overall_analysis}
                     </p>
@@ -722,7 +801,7 @@ export default function UploadPage() {
               </div>
               <ul className="space-y-4">
                 {result.suggestions.map((suggestion, idx) => (
-                  <li key={idx} className="text-zen-earth font-light leading-relaxed flex items-start gap-4">
+                  <li key={idx} className="text-gray-800 font-light leading-relaxed flex items-start gap-4">
                     <span className="flex-shrink-0 w-8 h-8 rounded-full bg-zen-sage/20 flex items-center justify-center text-zen-pine font-medium text-sm">
                       {idx + 1}
                     </span>

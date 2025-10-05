@@ -9,3 +9,4 @@ opencv-python
 requests
 flask
 werkzeug
+elevenlabs

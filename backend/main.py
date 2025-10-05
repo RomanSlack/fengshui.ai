@@ -27,6 +27,7 @@ from dotenv import load_dotenv
 from object_detection import detect_room_objects
 from model_generation import generate_room_model, RENDER_OUTPUT_DIR
 from blender_service import start_blender_service, stop_blender_service, is_blender_service_running
+from elevenlabs import ElevenLabs
 
 # Configure logging
 logging.basicConfig(
@@ -79,6 +80,7 @@ load_dotenv()  # Looks in current directory first, then parent
 
 # Initialize client lazily to avoid cleanup errors
 _client = None
+_elevenlabs_client = None
 
 def get_gemini_client():
     """Get or create Gemini client instance"""
@@ -89,6 +91,16 @@ def get_gemini_client():
             raise ValueError("GOOGLE_API_KEY not found in environment variables")
         _client = genai.Client(api_key=api_key)
     return _client
+
+def get_elevenlabs_client():
+    """Get or create ElevenLabs client instance"""
+    global _elevenlabs_client
+    if _elevenlabs_client is None:
+        api_key = os.environ.get("ELEVENLABS_API_KEY")
+        if not api_key:
+            raise ValueError("ELEVENLABS_API_KEY not found in environment variables")
+        _elevenlabs_client = ElevenLabs(api_key=api_key)
+    return _elevenlabs_client
 
 def encode_image_to_base64(file) -> str:
     return base64.b64encode(file.read()).decode("utf-8")
@@ -131,6 +143,7 @@ def call_gemini_fengshui(image_data: bytes, detected_objects: list = None) -> di
     client = get_gemini_client()
     response = client.models.generate_content(
         model="gemini-2.5-flash",
+
         contents=[
             {
                 "role": "user",
@@ -351,6 +364,55 @@ async def get_model_file(filename: str):
         media_type="application/octet-stream",
         filename=filename
     )
+
+
+@app.post("/tts/generate")
+async def generate_speech(text: dict):
+    """
+    Generate speech audio from text using ElevenLabs API.
+
+    Args:
+        text: JSON body with 'text' field containing the text to convert
+
+    Returns:
+        Audio file as MP3
+    """
+    try:
+        text_content = text.get("text", "")
+        if not text_content:
+            raise HTTPException(status_code=400, detail="Text field is required")
+
+        client = get_elevenlabs_client()
+
+        # Generate audio using ElevenLabs with specified voice
+        audio_generator = client.text_to_speech.convert(
+            voice_id="pFQStpMdprGFILRDrWR2",  # Voice ID as specified
+            text=text_content,
+            output_format="mp3_44100_128"
+        )
+
+        # Collect audio bytes from generator
+        audio_bytes = b"".join(audio_generator)
+
+        # Return audio as response
+        from fastapi.responses import Response
+        return Response(
+            content=audio_bytes,
+            media_type="audio/mpeg",
+            headers={
+                "Content-Disposition": "inline; filename=speech.mp3"
+            }
+        )
+
+    except Exception as e:
+        error_msg = str(e)
+        logger.error(f"Text-to-speech generation failed: {error_msg}")
+
+        # Check if it's a quota error
+        if "quota_exceeded" in error_msg or "quota" in error_msg.lower():
+            raise HTTPException(status_code=402, detail="ElevenLabs API quota exceeded. Please add more credits to your account.")
+
+        raise HTTPException(status_code=500, detail=f"Failed to generate speech: {error_msg}")
 
 
 if __name__ == "__main__":
