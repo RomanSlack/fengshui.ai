@@ -49,9 +49,17 @@ export default function UploadPage() {
   const [mascotFadingOut, setMascotFadingOut] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [paywallFadingOut, setPaywallFadingOut] = useState(false);
+  const [showEchoSuccess, setShowEchoSuccess] = useState(false);
 
   // Auth0 integration
-  const { isAuthenticated: isAuth0Authenticated, user: auth0User } = useAuth0();
+  const { isAuthenticated: isAuth0Authenticated, user: auth0User, error: auth0Error } = useAuth0();
+
+  // Echo integration for payments
+  const { isAuthenticated: isEchoAuthenticated, signIn: echoSignIn } = useEcho();
+  const echoClient = useEchoClient({
+    apiUrl: 'https://echo.merit.systems'
+  });
+  const [balance, setBalance] = useState<number | null>(null);
 
   // Trigger fade-in on mount
   useEffect(() => {
@@ -62,16 +70,36 @@ export default function UploadPage() {
   useEffect(() => {
     const usedFreeAnalysis = localStorage.getItem('fengshui_used_free_analysis') === 'true';
 
-    if (usedFreeAnalysis) {
-      // User has used free analysis - show paywall (will auto-dismiss if Echo connected)
+    // Fallback: Check localStorage directly for Echo tokens (in case SDK hasn't initialized)
+    const echoTokenKey = Object.keys(localStorage).find(key =>
+      key.startsWith('oidc.user:https://echo.merit.systems')
+    );
+    const hasEchoTokens = !!echoTokenKey;
+
+    console.log('Paywall check:', {
+      usedFreeAnalysis,
+      isEchoAuthenticated,
+      hasEchoTokens,
+      echoTokenKey
+    });
+
+    // Use hook state OR localStorage fallback
+    const echoIsConnected = isEchoAuthenticated || hasEchoTokens;
+
+    if (usedFreeAnalysis && !echoIsConnected) {
+      // User has used free analysis AND not Echo connected - show paywall
       setShowPaywall(true);
       setShowMascotWelcome(false);
-    } else {
+    } else if (!usedFreeAnalysis) {
       // First time user - show welcome mascot
       setShowMascotWelcome(true);
       setShowPaywall(false);
+    } else {
+      // Used free analysis but Echo IS connected - don't show paywall
+      setShowPaywall(false);
+      setShowMascotWelcome(false);
     }
-  }, []);
+  }, [isEchoAuthenticated]);
 
   // Listen for navigation events to trigger fade-out
   useEffect(() => {
@@ -92,13 +120,6 @@ export default function UploadPage() {
     }
   }, [isAuth0Authenticated, authModalVisible]);
 
-  // Echo integration for payments
-  const { isAuthenticated: isEchoAuthenticated, signIn: echoSignIn } = useEcho();
-  const echoClient = useEchoClient({
-    apiUrl: 'https://echo.merit.systems'
-  });
-  const [balance, setBalance] = useState<number | null>(null);
-
   // Check balance if authenticated
   useEffect(() => {
     if (isEchoAuthenticated && echoClient) {
@@ -108,16 +129,35 @@ export default function UploadPage() {
     }
   }, [isEchoAuthenticated, echoClient]);
 
-  // Auto-dismiss paywall when Echo connects
+  // Auto-dismiss paywall when Echo connects and show success message
   useEffect(() => {
     if (isEchoAuthenticated && showPaywall) {
+      // Fade out paywall
       setPaywallFadingOut(true);
       setTimeout(() => {
         setShowPaywall(false);
         setPaywallFadingOut(false);
       }, 700);
+
+      // Show success toast
+      setShowEchoSuccess(true);
+      setTimeout(() => {
+        setShowEchoSuccess(false);
+      }, 4000);
     }
   }, [isEchoAuthenticated, showPaywall]);
+
+  // Show success message when Echo connects (even if no paywall showing)
+  useEffect(() => {
+    const wasNotAuthenticated = sessionStorage.getItem('echo_was_connecting');
+    if (isEchoAuthenticated && wasNotAuthenticated === 'true') {
+      sessionStorage.removeItem('echo_was_connecting');
+      setShowEchoSuccess(true);
+      setTimeout(() => {
+        setShowEchoSuccess(false);
+      }, 4000);
+    }
+  }, [isEchoAuthenticated]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -143,13 +183,21 @@ export default function UploadPage() {
 
     // Check if user needs to connect Echo (used free analysis and not connected)
     const usedFreeAnalysis = localStorage.getItem('fengshui_used_free_analysis') === 'true';
-    if (usedFreeAnalysis && !isEchoAuthenticated) {
+
+    // Fallback: Check localStorage for Echo tokens
+    const echoTokenKey = Object.keys(localStorage).find(key =>
+      key.startsWith('oidc.user:https://echo.merit.systems')
+    );
+    const hasEchoTokens = !!echoTokenKey;
+    const echoIsConnected = isEchoAuthenticated || hasEchoTokens;
+
+    if (usedFreeAnalysis && !echoIsConnected) {
       setError("Please connect Echo to continue analyzing");
       return;
     }
 
     // Check if Echo user has sufficient balance
-    if (isEchoAuthenticated && balance !== null && balance < 100) {
+    if (echoIsConnected && balance !== null && balance < 100) {
       setError("Insufficient balance. Please add credits to continue!");
       return;
     }
@@ -186,12 +234,12 @@ export default function UploadPage() {
       setResult(data);
 
       // Mark free analysis as used (if not Echo authenticated)
-      if (!isEchoAuthenticated) {
+      if (!echoIsConnected) {
         localStorage.setItem('fengshui_used_free_analysis', 'true');
       }
 
       // Deduct balance if Echo user
-      if (isEchoAuthenticated && echoClient) {
+      if (echoIsConnected && echoClient) {
         await echoClient.balance.deduct({ amount: 100 });
         const bal = await echoClient.balance.get();
         setBalance(bal.balance);
@@ -207,7 +255,14 @@ export default function UploadPage() {
     // Check if user has used free analysis and not connected to Echo
     const usedFreeAnalysis = localStorage.getItem('fengshui_used_free_analysis') === 'true';
 
-    if (usedFreeAnalysis && !isEchoAuthenticated) {
+    // Fallback: Check localStorage for Echo tokens
+    const echoTokenKey = Object.keys(localStorage).find(key =>
+      key.startsWith('oidc.user:https://echo.merit.systems')
+    );
+    const hasEchoTokens = !!echoTokenKey;
+    const echoIsConnected = isEchoAuthenticated || hasEchoTokens;
+
+    if (usedFreeAnalysis && !echoIsConnected) {
       // Show paywall screen
       setShowPaywall(true);
       setSelectedFile(null);
@@ -225,6 +280,8 @@ export default function UploadPage() {
 
   const handleConnectEcho = () => {
     if (echoSignIn) {
+      // Mark that we're starting Echo auth flow
+      sessionStorage.setItem('echo_was_connecting', 'true');
       echoSignIn();
     }
   };
@@ -255,7 +312,7 @@ export default function UploadPage() {
 
   return (
     <main className={`min-h-screen bg-gradient-to-b from-zen-cloud to-alabaster transition-opacity duration-1000 ${isNavigating ? 'opacity-0' : fadeIn ? 'opacity-100' : 'opacity-0'}`}>
-      {/* Mandatory Auth Modal */}
+      {/* Mandatory Auth Modal - Only show if not authenticated */}
       {!isAuth0Authenticated && authModalVisible && (
         <div className={`fixed inset-0 bg-white z-50 flex items-center justify-center transition-opacity duration-1000 ${isAuth0Authenticated ? 'opacity-0' : 'opacity-100'}`}>
           <div className="max-w-md w-full mx-4">
@@ -426,11 +483,6 @@ export default function UploadPage() {
               {error && (
                 <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl">
                   <p className="text-red-700 text-sm font-light">{error}</p>
-                  {showPaymentPrompt && !isAuth0Authenticated && (
-                    <p className="text-gray-700 text-sm mt-2 font-light">
-                      Sign in with Google to continue using FengShui.fy!
-                    </p>
-                  )}
                 </div>
               )}
             </div>
@@ -720,6 +772,23 @@ export default function UploadPage() {
           </div>
         )}
       </div>
+
+      {/* Echo Success Toast */}
+      {showEchoSuccess && (
+        <div className="fixed top-8 right-8 z-50 animate-in slide-in-from-top-4 fade-in duration-500">
+          <div className="bg-gradient-to-br from-zen-sage to-zen-pine text-white rounded-2xl shadow-2xl p-6 flex items-center gap-4 max-w-md">
+            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-medium text-lg">Echo Connected!</p>
+              <p className="text-sm text-white/90 font-light">You now have unlimited analyses. Balance: {balance !== null ? `${Math.floor(balance / 100)} credits` : '...'}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Organic background shapes */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">

@@ -12,20 +12,36 @@ interface TopNavProps {
 
 export function TopNav({ onNavigate }: TopNavProps = {}) {
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useAuth0();
+  const { user, isAuthenticated, logout, error } = useAuth0();
   const { isAuthenticated: isEchoAuthenticated } = useEcho();
   const echoClient = useEchoClient({ apiUrl: "https://echo.merit.systems" });
   const [balance, setBalance] = useState<number | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Get Echo balance
+  // Check if Echo is connected (hook state OR localStorage fallback)
+  const [echoIsConnected, setEchoIsConnected] = useState(false);
+
   useEffect(() => {
-    if (isEchoAuthenticated && echoClient) {
+    // Fallback: Check localStorage for Echo tokens
+    const echoTokenKey = Object.keys(localStorage).find(key =>
+      key.startsWith('oidc.user:https://echo.merit.systems')
+    );
+    const hasEchoTokens = !!echoTokenKey;
+    setEchoIsConnected(isEchoAuthenticated || hasEchoTokens);
+  }, [isEchoAuthenticated]);
+
+  // Get Echo balance (only when SDK is fully initialized)
+  useEffect(() => {
+    // Only fetch balance when the Echo SDK hook confirms authentication
+    // (not just when localStorage tokens exist)
+    if (isEchoAuthenticated && echoClient && echoClient.balance) {
       echoClient.balance
         .get()
         .then((bal) => setBalance(bal.balance))
-        .catch(console.error);
+        .catch((err) => {
+          console.error('Failed to fetch Echo balance:', err);
+        });
     }
   }, [isEchoAuthenticated, echoClient]);
 
@@ -68,7 +84,8 @@ export function TopNav({ onNavigate }: TopNavProps = {}) {
   // Extract first name
   const firstName = user?.given_name || user?.name?.split(" ")[0] || user?.email?.split("@")[0] || "User";
 
-  if (!isAuthenticated) {
+  // Only show navbar if authenticated
+  if (!isAuthenticated || !user) {
     return null;
   }
 
@@ -98,7 +115,7 @@ export function TopNav({ onNavigate }: TopNavProps = {}) {
           {/* Right: Echo + User Profile */}
           <div className="flex items-center gap-4">
             {/* Echo Connection */}
-            {isEchoAuthenticated ? (
+            {echoIsConnected ? (
               <div className="flex items-center gap-3">
                 <div className="text-right hidden sm:block">
                   <p className="text-xs font-light text-gray-500">Balance</p>
@@ -115,7 +132,10 @@ export function TopNav({ onNavigate }: TopNavProps = {}) {
               </div>
             ) : (
               <button
-                onClick={() => echoClient?.connect()}
+                onClick={() => {
+                  sessionStorage.setItem('echo_was_connecting', 'true');
+                  echoClient?.connect();
+                }}
                 className="px-4 py-2 text-sm font-light border border-zen-sage/30 text-zen-pine rounded-full hover:bg-zen-sage/10 transition-all duration-300"
               >
                 Connect Echo

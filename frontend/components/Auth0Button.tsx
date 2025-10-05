@@ -6,11 +6,6 @@ import { useEffect } from 'react';
 export function Auth0Button() {
   const { user, isAuthenticated, isLoading, loginWithRedirect, logout, error } = useAuth0();
 
-  // Debug logging
-  useEffect(() => {
-    console.log('Auth0 State:', { isAuthenticated, isLoading, user, error });
-  }, [isAuthenticated, isLoading, user, error]);
-
   if (isLoading) {
     return (
       <div className="flex items-center gap-2">

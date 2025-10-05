@@ -8,26 +8,27 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const auth0Domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN || 'dev-YOUR-DOMAIN.us.auth0.com';
   const auth0ClientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || 'ISDSR4eqmCeTQxkGEhuLHnTEdkjdmJRY';
 
+  // Wrap Echo OUTSIDE Auth0 so they use completely separate storage
   return (
-    <Auth0Provider
-      domain={auth0Domain}
-      clientId={auth0ClientId}
-      authorizationParams={{
-        redirect_uri: typeof window !== 'undefined' ? `${window.location.origin}/upload` : 'http://localhost:3000/upload',
-        scope: "openid profile email"
+    <EchoProvider
+      config={{
+        appId,
+        redirectUri: typeof window !== 'undefined' ? `${window.location.origin}/echo-callback` : 'http://localhost:3000/echo-callback',
       }}
-      cacheLocation="localstorage"
-      useRefreshTokens={true}
-      skipRedirectCallback={typeof window !== 'undefined' && window.location.search.includes('echo')}
     >
-      <EchoProvider
-        config={{
-          appId,
-          redirectUri: typeof window !== 'undefined' ? `${window.location.origin}/?echo=callback` : 'http://localhost:3000/?echo=callback',
+      <Auth0Provider
+        domain={auth0Domain}
+        clientId={auth0ClientId}
+        authorizationParams={{
+          redirect_uri: typeof window !== 'undefined' ? `${window.location.origin}/upload` : 'http://localhost:3000/upload',
+          scope: "openid profile email"
         }}
+        cacheLocation="localstorage"
+        useRefreshTokens={true}
+        skipRedirectCallback={typeof window !== 'undefined' && window.location.pathname === '/echo-callback'}
       >
         {children}
-      </EchoProvider>
-    </Auth0Provider>
+      </Auth0Provider>
+    </EchoProvider>
   );
 }

@@ -1,38 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEcho } from "@merit-systems/echo-react-sdk";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 
 export default function Home() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { isAuthenticated: isEchoAuthenticated } = useEcho();
   const [isNavigating, setIsNavigating] = useState(false);
   const [showLoading, setShowLoading] = useState(false);
   const [mascotHovered, setMascotHovered] = useState(false);
   const [fadeIn, setFadeIn] = useState(false);
   const [hearts, setHearts] = useState<{ id: number; x: number; y: number; duration: number }[]>([]);
-  const [hasRedirected, setHasRedirected] = useState(false);
-
-  // Handle Echo callback redirect - wait for Echo to authenticate, then redirect
-  useEffect(() => {
-    if (searchParams.get('echo') === 'callback' && !hasRedirected) {
-      if (isEchoAuthenticated) {
-        // Echo auth completed successfully, redirect now
-        setHasRedirected(true);
-        router.push('/upload');
-      } else {
-        // Give Echo 2 seconds to process, then redirect anyway
-        const timeout = setTimeout(() => {
-          setHasRedirected(true);
-          router.push('/upload');
-        }, 2000);
-        return () => clearTimeout(timeout);
-      }
-    }
-  }, [searchParams, isEchoAuthenticated, router, hasRedirected]);
 
   // Trigger fade-in on mount
   useEffect(() => {
