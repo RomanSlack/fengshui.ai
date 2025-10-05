@@ -5,11 +5,28 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { useEcho, useEchoClient } from '@merit-systems/echo-react-sdk';
 import { Auth0Button } from '@/components/Auth0Button';
 import { EchoSignIn } from '@/components/EchoSignIn';
+import { FengShuiVisualization } from '@/components/FengShuiVisualization';
+
+interface Tooltip {
+  object_class: string;
+  object_index: number;
+  type: 'good' | 'bad' | 'neutral';
+  message: string;
+  coordinates: {
+    bbox: any;
+    center: any;
+  };
+  confidence: number;
+}
 
 interface AnalysisResult {
-  success: boolean;
-  analysis: string;
-  filename: string;
+  score: number;
+  overall_analysis: string;
+  strengths: string[];
+  weaknesses: string[];
+  suggestions: string[];
+  detected_objects: any[];
+  tooltips: Tooltip[];
 }
 
 export default function UploadPage() {
@@ -104,11 +121,7 @@ export default function UploadPage() {
       }
 
       const data = await response.json();
-      setResult({
-        success: true,
-        analysis: data.result,
-        filename: selectedFile.name
-      });
+      setResult(data);
 
       // Increment request count and deduct balance
       if (!isAuth0Authenticated) {
@@ -329,14 +342,94 @@ export default function UploadPage() {
 
           {/* Results Section */}
           {result && (
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                Analysis Results
-              </h2>
-              <div className="prose max-w-none">
-                <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
-                  {result.analysis}
+            <div className="space-y-6">
+              {/* Score Card */}
+              <div className="bg-white rounded-2xl shadow-lg p-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Feng Shui Score
+                  </h2>
+                  <div className="flex items-center gap-2">
+                    <div className="text-5xl font-bold text-blue-600">
+                      {result.score}
+                    </div>
+                    <div className="text-gray-400 text-2xl">/10</div>
+                  </div>
                 </div>
+              </div>
+
+              {/* Interactive Visualization with Tooltips */}
+              {result.tooltips && result.tooltips.length > 0 && preview && (
+                <div className="bg-white rounded-2xl shadow-lg p-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">
+                    Interactive Analysis
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Hover over the markers to see specific feng shui insights for each object
+                  </p>
+                  <FengShuiVisualization
+                    imageUrl={preview}
+                    tooltips={result.tooltips}
+                  />
+                </div>
+              )}
+
+              {/* Overall Analysis */}
+              <div className="bg-white rounded-2xl shadow-lg p-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">
+                  Overall Analysis
+                </h3>
+                <p className="text-gray-700 leading-relaxed">
+                  {result.overall_analysis}
+                </p>
+              </div>
+
+              {/* Strengths & Weaknesses */}
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Strengths */}
+                <div className="bg-green-50 border border-green-200 rounded-2xl p-6">
+                  <h3 className="text-lg font-bold text-green-900 mb-3 flex items-center gap-2">
+                    <span className="text-2xl">✓</span>
+                    Strengths
+                  </h3>
+                  <ul className="space-y-2">
+                    {result.strengths.map((strength, idx) => (
+                      <li key={idx} className="text-green-800 text-sm">
+                        • {strength}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Weaknesses */}
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
+                  <h3 className="text-lg font-bold text-red-900 mb-3 flex items-center gap-2">
+                    <span className="text-2xl">✗</span>
+                    Weaknesses
+                  </h3>
+                  <ul className="space-y-2">
+                    {result.weaknesses.map((weakness, idx) => (
+                      <li key={idx} className="text-red-800 text-sm">
+                        • {weakness}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              {/* Suggestions */}
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
+                <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center gap-2">
+                  <span className="text-2xl">💡</span>
+                  Improvement Suggestions
+                </h3>
+                <ul className="space-y-2">
+                  {result.suggestions.map((suggestion, idx) => (
+                    <li key={idx} className="text-blue-800 text-sm">
+                      {idx + 1}. {suggestion}
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
           )}
