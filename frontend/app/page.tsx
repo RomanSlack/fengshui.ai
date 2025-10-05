@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
@@ -9,6 +9,12 @@ export default function Home() {
   const [isNavigating, setIsNavigating] = useState(false);
   const [showLoading, setShowLoading] = useState(false);
   const [mascotHovered, setMascotHovered] = useState(false);
+  const [fadeIn, setFadeIn] = useState(false);
+
+  // Trigger fade-in on mount
+  useEffect(() => {
+    setFadeIn(true);
+  }, []);
 
   const handleBeginJourney = () => {
     setIsNavigating(true);
@@ -22,7 +28,7 @@ export default function Home() {
     setTimeout(() => {
       clearTimeout(loadingTimeout);
       router.push("/upload");
-    }, 1000);
+    }, 600); // Faster 600ms
   };
 
   if (showLoading) {
@@ -34,7 +40,7 @@ export default function Home() {
   }
 
   return (
-    <main className={`relative min-h-screen overflow-hidden transition-opacity duration-1000 ${isNavigating ? 'opacity-0' : 'opacity-100'}`}>
+    <main className={`relative min-h-screen overflow-hidden transition-opacity duration-700 ${isNavigating ? 'opacity-0' : fadeIn ? 'opacity-100' : 'opacity-0'}`}>
       {/* Full-screen background image - responsive and always covering */}
       <div className="fixed inset-0 w-full h-full -z-10">
         <Image

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth0 } from '@auth0/auth0-react';
 import { useEcho, useEchoClient } from '@merit-systems/echo-react-sdk';
 import { Auth0Button } from '@/components/Auth0Button';
-import { EchoSignIn } from '@/components/EchoSignIn';
+import { TopNav } from '@/components/TopNav';
 import { FengShuiVisualization } from '@/components/FengShuiVisualization';
 import { CircularProgress } from '@/components/CircularProgress';
 import Embedded3DViewer from '@/components/Embedded3DViewer';
@@ -37,6 +37,7 @@ interface AnalysisResult {
 
 export default function UploadPage() {
   const [fadeIn, setFadeIn] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const [authModalVisible, setAuthModalVisible] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -50,6 +51,16 @@ export default function UploadPage() {
   // Trigger fade-in on mount
   useEffect(() => {
     setFadeIn(true);
+  }, []);
+
+  // Listen for navigation events to trigger fade-out
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      setFadeIn(false);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 
   // Handle auth modal fade-out when authenticated
@@ -205,7 +216,7 @@ export default function UploadPage() {
   };
 
   return (
-    <main className={`min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 transition-opacity duration-1000 ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
+    <main className={`min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 transition-opacity duration-700 ${isNavigating ? 'opacity-0' : fadeIn ? 'opacity-100' : 'opacity-0'}`}>
       {/* Mandatory Auth Modal */}
       {!isAuth0Authenticated && authModalVisible && (
         <div className={`fixed inset-0 bg-white z-50 flex items-center justify-center transition-opacity duration-1000 ${isAuth0Authenticated ? 'opacity-0' : 'opacity-100'}`}>
@@ -239,94 +250,12 @@ export default function UploadPage() {
         </div>
       )}
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Header with Auth */}
-        <div className="max-w-7xl mx-auto mb-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Feng Shui AI</h1>
-              <p className="text-sm text-gray-500 mt-1">Powered by Auth0 + Echo</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Auth0Button />
-              {isAuth0Authenticated && <EchoSignIn />}
-            </div>
-          </div>
+      {/* Top Navigation */}
+      <TopNav onNavigate={() => setIsNavigating(true)} />
 
-          {/* Testing Toggle */}
-          <div className="mt-4 flex items-center justify-end gap-2 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <span className="text-xs font-medium text-yellow-800">
-              🧪 TESTING MODE
-            </span>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <span className="text-sm text-yellow-700">
-                Paywall {paywallEnabled ? 'ON' : 'OFF'}
-              </span>
-              <button
-                onClick={() => setPaywallEnabled(!paywallEnabled)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  paywallEnabled ? 'bg-green-600' : 'bg-gray-300'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    paywallEnabled ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </label>
-            <span className="text-xs text-yellow-600">
-              {paywallEnabled ? '(Demo mode - paywall active)' : '(Testing - unlimited requests)'}
-            </span>
-          </div>
-        </div>
+      <div className="container mx-auto px-4 py-8">
 
         <div className="max-w-7xl mx-auto">
-          {/* Status Card */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-8">
-            <div className="flex flex-col gap-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {isAuth0Authenticated ? '🔐 Authenticated' : '🆓 Free Trial'}
-                  </h3>
-                  <p className="text-gray-600">
-                    {isAuth0Authenticated
-                      ? 'Unlimited analyses with Auth0'
-                      : `${FREE_REQUESTS - requestCount} free analyses remaining`
-                    }
-                  </p>
-                </div>
-                {!isAuth0Authenticated && (
-                  <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-lg border border-gray-200">
-                    Sign in for unlimited access
-                  </div>
-                )}
-              </div>
-
-              {/* Echo Payment Section - Always show for demo */}
-              {isAuth0Authenticated && (
-                <div className="border-t border-blue-200 pt-4 flex justify-between items-center">
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-900 mb-1">
-                      💳 Echo Monetization
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      {isEchoAuthenticated && balance !== null
-                        ? `Balance: ${Math.floor(balance / 100)} paid analyses`
-                        : 'Optional: Purchase credits for premium features'}
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleAddCredits}
-                    className="px-4 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-700 hover:to-blue-700 transition-colors text-sm font-medium shadow-md"
-                  >
-                    💰 Add Credits ($5 = 50 analyses)
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
 
           <h2 className="text-4xl font-bold text-gray-900 mb-4 text-center">
             Feng Shui Analysis
