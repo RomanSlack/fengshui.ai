@@ -526,51 +526,54 @@ export default function UploadPage() {
           <div className="transition-all duration-700 ease-out space-y-12">
 
             {/* Score Overview */}
-            <div className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-lg p-12 border border-gray-200">
-              <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-zen-sage to-zen-pine mb-4">
-                  <span className="text-white text-2xl font-light">✓</span>
+            <div className="relative">
+              {/* Mascot with comment - floating on left side */}
+              <div className="hidden lg:flex flex-col items-center space-y-4 absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full pr-8">
+                {/* Speech Bubble */}
+                <div className="relative max-w-sm mb-2">
+                  <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-5 border border-zen-sage/20">
+                    <p className="text-base font-light text-zen-pine text-center leading-relaxed">
+                      {getMascotComment(result.score)}
+                    </p>
+                    {/* Speech bubble tail pointing down */}
+                    <div className="absolute bottom-[-8px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-white/95"></div>
+                  </div>
                 </div>
-                <h2 className="text-2xl font-serif font-light text-zen-pine tracking-calm mb-6">
-                  Your Feng Shui Assessment
-                </h2>
+
+                {/* Mascot Image */}
+                <div className="relative">
+                  <Image
+                    src={getMascotImage(result.score)}
+                    alt="Feng Shui Mascot"
+                    width={240}
+                    height={240}
+                    className="object-contain drop-shadow-2xl"
+                    priority
+                  />
+                </div>
               </div>
 
-              <div className="flex flex-col md:flex-row items-center justify-center gap-12">
-                {/* Mascot with comment */}
-                <div className="flex flex-col items-center space-y-4">
-                  {/* Speech Bubble */}
-                  <div className="relative max-w-xs mb-2">
-                    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-4 border border-zen-sage/20">
-                      <p className="text-sm font-light text-zen-pine text-center leading-relaxed">
-                        {getMascotComment(result.score)}
-                      </p>
-                      {/* Speech bubble tail pointing down */}
-                      <div className="absolute bottom-[-8px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-white/95"></div>
-                    </div>
+              {/* Score card container - unchanged */}
+              <div className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-lg p-12 border border-gray-200">
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-zen-sage to-zen-pine mb-4">
+                    <span className="text-white text-2xl font-light">✓</span>
                   </div>
-
-                  {/* Mascot Image */}
-                  <div className="relative">
-                    <Image
-                      src={getMascotImage(result.score)}
-                      alt="Feng Shui Mascot"
-                      width={160}
-                      height={160}
-                      className="object-contain drop-shadow-2xl"
-                      priority
-                    />
-                  </div>
+                  <h2 className="text-2xl font-serif font-light text-zen-pine tracking-calm mb-6">
+                    Your Feng Shui Assessment
+                  </h2>
                 </div>
 
-                <CircularProgress score={result.score} size={220} strokeWidth={16} />
-                <div className="flex-1 text-center md:text-left max-w-xl">
-                  <h3 className="text-xl font-serif font-light text-zen-pine mb-4 tracking-calm">
-                    Overall Analysis
-                  </h3>
-                  <p className="text-zen-earth font-light leading-relaxed">
-                    {result.overall_analysis}
-                  </p>
+                <div className="flex flex-col md:flex-row items-center justify-center gap-12">
+                  <CircularProgress score={result.score} size={220} strokeWidth={16} />
+                  <div className="flex-1 text-center md:text-left max-w-xl">
+                    <h3 className="text-xl font-serif font-light text-zen-pine mb-4 tracking-calm">
+                      Overall Analysis
+                    </h3>
+                    <p className="text-zen-earth font-light leading-relaxed">
+                      {result.overall_analysis}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
