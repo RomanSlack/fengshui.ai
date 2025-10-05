@@ -1,7 +1,7 @@
 'use client';
 
-import { Suspense, useEffect, useState, useRef, useMemo } from 'react';
-import { Canvas, useLoader, useThree, useFrame } from '@react-three/fiber';
+import { Suspense, useEffect, useState, useRef } from 'react';
+import { Canvas, useLoader } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Environment, Center } from '@react-three/drei';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import * as THREE from 'three';
@@ -28,12 +28,6 @@ interface Tooltip {
   confidence: number;
 }
 
-interface TooltipMarker {
-  position: THREE.Vector3;
-  screenPosition: { x: number; y: number };
-  tooltip: Tooltip;
-  index: number;
-}
 
 interface ModelViewer3DWithTooltipsProps {
   modelUrl: string;
@@ -42,19 +36,7 @@ interface ModelViewer3DWithTooltipsProps {
   imageHeight: number;
 }
 
-function FBXModelWithTooltips({
-  url,
-  tooltips,
-  imageWidth,
-  imageHeight,
-  onMarkersReady
-}: {
-  url: string;
-  tooltips: Tooltip[];
-  imageWidth: number;
-  imageHeight: number;
-  onMarkersReady: (markers: TooltipMarker[]) => void;
-}) {
+function FBXModel({ url }: { url: string }) {
   const fbx = useLoader(FBXLoader, url, (loader) => {
     const manager = new THREE.LoadingManager();
     manager.setURLModifier((textureUrl) => {
@@ -66,10 +48,6 @@ function FBXModelWithTooltips({
     });
     loader.manager = manager;
   });
-
-  const { camera } = useThree();
-  const meshRef = useRef<THREE.Group>(null);
-  const raycaster = useMemo(() => new THREE.Raycaster(), []);
 
   useEffect(() => {
     // Configure materials
@@ -106,92 +84,16 @@ function FBXModelWithTooltips({
         });
       }
     });
-
-    // Calculate tooltip positions using raycasting
-    if (meshRef.current && tooltips.length > 0) {
-      const markers: TooltipMarker[] = [];
-
-      tooltips.forEach((tooltip, index) => {
-        // Normalize coordinates from image space to NDC (Normalized Device Coordinates)
-        const x = (tooltip.coordinates.center.x / imageWidth) * 2 - 1;
-        const y = -(tooltip.coordinates.center.y / imageHeight) * 2 + 1;
-
-        raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
-        const intersects = raycaster.intersectObject(meshRef.current!, true);
-
-        if (intersects.length > 0) {
-          // Use the first intersection point
-          const worldPos = intersects[0].point.clone();
-
-          // Offset slightly towards camera to prevent z-fighting
-          const offsetDirection = new THREE.Vector3()
-            .subVectors(camera.position, worldPos)
-            .normalize()
-            .multiplyScalar(0.1);
-          worldPos.add(offsetDirection);
-
-          markers.push({
-            position: worldPos,
-            screenPosition: { x: 0, y: 0 }, // Will be updated dynamically
-            tooltip,
-            index
-          });
-        }
-      });
-
-      onMarkersReady(markers);
-    }
-  }, [fbx, tooltips, imageWidth, imageHeight, camera, raycaster, onMarkersReady]);
+  }, [fbx]);
 
   return (
     <Center>
-      <primitive ref={meshRef} object={fbx} scale={0.5} />
+      <primitive object={fbx} scale={0.5} />
     </Center>
   );
 }
 
-// Component to track 3D positions and update screen positions
-function ScreenSpaceMarkers({ markers, onUpdateScreenPositions }: {
-  markers: TooltipMarker[];
-  onUpdateScreenPositions: (positions: { x: number; y: number }[]) => void;
-}) {
-  const { camera, size } = useThree();
-
-  useFrame(() => {
-    const screenPositions = markers.map(marker => {
-      const vec = marker.position.clone();
-      vec.project(camera);
-
-      // Convert to screen coordinates
-      const x = (vec.x * 0.5 + 0.5) * size.width;
-      const y = (vec.y * -0.5 + 0.5) * size.height;
-
-      return { x, y };
-    });
-
-    onUpdateScreenPositions(screenPositions);
-  });
-
-  return null;
-}
-
-function Scene({
-  modelUrl,
-  tooltips,
-  imageWidth,
-  imageHeight,
-  markers,
-  onMarkersReady,
-  onUpdateScreenPositions
-}: {
-  modelUrl: string;
-  tooltips: Tooltip[];
-  imageWidth: number;
-  imageHeight: number;
-  markers: TooltipMarker[];
-  onMarkersReady: (markers: TooltipMarker[]) => void;
-  onUpdateScreenPositions: (positions: { x: number; y: number }[]) => void;
-}) {
+function Scene({ modelUrl }: { modelUrl: string }) {
   return (
     <>
       {/* Camera: position={[x, y, z]} - Start facing directly at mesh from front */}
@@ -232,19 +134,8 @@ function Scene({
       <Environment preset="studio" background={false} />
 
       <Suspense fallback={null}>
-        <FBXModelWithTooltips
-          url={modelUrl}
-          tooltips={tooltips}
-          imageWidth={imageWidth}
-          imageHeight={imageHeight}
-          onMarkersReady={onMarkersReady}
-        />
+        <FBXModel url={modelUrl} />
       </Suspense>
-
-      {/* Track screen positions */}
-      {markers.length > 0 && (
-        <ScreenSpaceMarkers markers={markers} onUpdateScreenPositions={onUpdateScreenPositions} />
-      )}
     </>
   );
 }
@@ -255,21 +146,27 @@ export default function ModelViewer3DWithTooltips({
   imageWidth,
   imageHeight
 }: ModelViewer3DWithTooltipsProps) {
-  const [markers, setMarkers] = useState<TooltipMarker[]>([]);
-  const [screenPositions, setScreenPositions] = useState<{ x: number; y: number }[]>([]);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [key, setKey] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setKey(prev => prev + 1);
   }, [modelUrl]);
 
-  const handleMarkersReady = (newMarkers: TooltipMarker[]) => {
-    setMarkers(newMarkers);
-  };
+  // Get screen positions from 2D coordinates relative to container
+  const getScreenPosition = (tooltip: Tooltip) => {
+    if (!containerRef.current) return { x: 0, y: 0 };
 
-  const handleUpdateScreenPositions = (positions: { x: number; y: number }[]) => {
-    setScreenPositions(positions);
+    const rect = containerRef.current.getBoundingClientRect();
+    const containerWidth = rect.width;
+    const containerHeight = rect.height;
+
+    // Scale from image coordinates to container coordinates
+    const x = (tooltip.coordinates.center.x / imageWidth) * containerWidth;
+    const y = (tooltip.coordinates.center.y / imageHeight) * containerHeight;
+
+    return { x, y };
   };
 
   const getTooltipColor = (type: string) => {
@@ -293,7 +190,7 @@ export default function ModelViewer3DWithTooltips({
   };
 
   return (
-    <div className="w-full h-full relative">
+    <div ref={containerRef} className="w-full h-full relative">
       <style jsx global>{`
         @keyframes fadeIn {
           from {
@@ -318,23 +215,14 @@ export default function ModelViewer3DWithTooltips({
         }}
         style={{ background: '#1a1a1a' }}
       >
-        <Scene
-          modelUrl={modelUrl}
-          tooltips={tooltips}
-          imageWidth={imageWidth}
-          imageHeight={imageHeight}
-          markers={markers}
-          onMarkersReady={handleMarkersReady}
-          onUpdateScreenPositions={handleUpdateScreenPositions}
-        />
+        <Scene modelUrl={modelUrl} />
       </Canvas>
 
-      {/* Overlay tooltips on top of canvas */}
-      {markers.map((marker, idx) => {
-        const screenPos = screenPositions[idx];
-        if (!screenPos) return null;
+      {/* Overlay tooltips using original 2D coordinates */}
+      {tooltips.map((tooltip, idx) => {
+        const screenPos = getScreenPosition(tooltip);
 
-        const colors = getTooltipColor(marker.tooltip.type);
+        const colors = getTooltipColor(tooltip.type);
         const isActive = activeIndex === idx;
 
         return (
@@ -387,9 +275,9 @@ export default function ModelViewer3DWithTooltips({
                   <div
                     className="rounded-2xl shadow-2xl p-8 border-4 backdrop-blur-md"
                     style={{
-                      backgroundColor: marker.tooltip.type === 'good'
+                      backgroundColor: tooltip.type === 'good'
                         ? 'rgb(240, 253, 244)'
-                        : marker.tooltip.type === 'bad'
+                        : tooltip.type === 'bad'
                         ? 'rgb(254, 242, 242)'
                         : 'rgb(254, 252, 232)',
                       borderColor: colors.color,
@@ -405,22 +293,22 @@ export default function ModelViewer3DWithTooltips({
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-bold text-2xl capitalize mb-3" style={{
-                          color: marker.tooltip.type === 'good'
+                          color: tooltip.type === 'good'
                             ? 'rgb(20, 83, 45)'
-                            : marker.tooltip.type === 'bad'
+                            : tooltip.type === 'bad'
                             ? 'rgb(127, 29, 29)'
                             : 'rgb(113, 63, 18)'
                         }}>
-                          {marker.tooltip.object_class}
+                          {tooltip.object_class}
                         </div>
                         <div className="text-xl leading-relaxed" style={{
-                          color: marker.tooltip.type === 'good'
+                          color: tooltip.type === 'good'
                             ? 'rgb(22, 101, 52)'
-                            : marker.tooltip.type === 'bad'
+                            : tooltip.type === 'bad'
                             ? 'rgb(153, 27, 27)'
                             : 'rgb(133, 77, 14)'
                         }}>
-                          {marker.tooltip.message}
+                          {tooltip.message}
                         </div>
                       </div>
                     </div>
