@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 interface Tooltip {
   object_class: string;
@@ -37,123 +37,211 @@ export function FengShuiVisualization({
   imageWidth = 1920,
   imageHeight = 1080
 }: FengShuiVisualizationProps) {
-  const [hoveredTooltip, setHoveredTooltip] = useState<number | null>(null);
+  const [clickedTooltip, setClickedTooltip] = useState<number | null>(null);
   const [imageDimensions, setImageDimensions] = useState({ width: imageWidth, height: imageHeight });
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Close tooltip when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setClickedTooltip(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const getTooltipColor = (type: string) => {
     switch (type) {
       case 'good':
         return {
-          border: 'border-green-500',
-          bg: 'bg-green-50',
-          text: 'text-green-900',
-          icon: '✓',
-          iconBg: 'bg-green-500'
+          stroke: '#22c55e',
+          fill: 'rgba(34, 197, 94, 0.1)',
+          iconBg: 'bg-green-500',
+          cardBg: 'bg-green-50',
+          cardBorder: 'border-green-500',
+          cardText: 'text-green-900',
+          icon: '✓'
         };
       case 'bad':
         return {
-          border: 'border-red-500',
-          bg: 'bg-red-50',
-          text: 'text-red-900',
-          icon: '✗',
-          iconBg: 'bg-red-500'
+          stroke: '#ef4444',
+          fill: 'rgba(239, 68, 68, 0.1)',
+          iconBg: 'bg-red-500',
+          cardBg: 'bg-red-50',
+          cardBorder: 'border-red-500',
+          cardText: 'text-red-900',
+          icon: '✗'
         };
       default:
         return {
-          border: 'border-yellow-500',
-          bg: 'bg-yellow-50',
-          text: 'text-yellow-900',
-          icon: '!',
-          iconBg: 'bg-yellow-500'
+          stroke: '#eab308',
+          fill: 'rgba(234, 179, 8, 0.1)',
+          iconBg: 'bg-yellow-500',
+          cardBg: 'bg-yellow-50',
+          cardBorder: 'border-yellow-500',
+          cardText: 'text-yellow-900',
+          icon: '!'
         };
     }
   };
 
   return (
-    <div className="relative w-full bg-gray-900 rounded-lg overflow-hidden">
-      {/* Main Image */}
-      <img
-        src={imageUrl}
-        alt="Room"
-        className="w-full h-auto"
-        onLoad={(e) => {
-          const img = e.target as HTMLImageElement;
-          setImageDimensions({ width: img.naturalWidth, height: img.naturalHeight });
-        }}
-      />
+    <div ref={containerRef} className="relative w-full">
+      {/* Main Image - Larger */}
+      <div className="relative">
+        <img
+          src={imageUrl}
+          alt="Room"
+          className="w-full h-auto rounded-lg"
+          onLoad={(e) => {
+            const img = e.target as HTMLImageElement;
+            setImageDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+          }}
+        />
 
-      {/* Tooltip Overlays */}
-      <svg
-        className="absolute top-0 left-0 w-full h-full pointer-events-none"
-        viewBox={`0 0 ${imageDimensions.width} ${imageDimensions.height}`}
-        preserveAspectRatio="none"
-      >
-        {tooltips.map((tooltip, index) => {
-          const colors = getTooltipColor(tooltip.type);
-          const { bbox, center } = tooltip.coordinates;
-
-          return (
-            <g key={index}>
-              {/* Bounding Box */}
-              <rect
-                x={bbox.x1}
-                y={bbox.y1}
-                width={bbox.width}
-                height={bbox.height}
-                fill="none"
-                stroke={colors.border.includes('green') ? '#22c55e' : colors.border.includes('red') ? '#ef4444' : '#eab308'}
-                strokeWidth="4"
-                strokeDasharray={hoveredTooltip === index ? '0' : '10,5'}
-                className="transition-all duration-200"
-                opacity={hoveredTooltip === index ? '1' : '0.6'}
-              />
-
-              {/* Center Point Marker */}
-              <circle
-                cx={center.x}
-                cy={center.y}
-                r="8"
-                fill={colors.border.includes('green') ? '#22c55e' : colors.border.includes('red') ? '#ef4444' : '#eab308'}
-                className="pointer-events-auto cursor-pointer"
-                onMouseEnter={() => setHoveredTooltip(index)}
-                onMouseLeave={() => setHoveredTooltip(null)}
-              />
-            </g>
-          );
-        })}
-      </svg>
-
-      {/* Tooltip Cards - Positioned at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        {/* Tooltip Overlays - Transparent until clicked */}
+        <svg
+          className="absolute top-0 left-0 w-full h-full pointer-events-none"
+          viewBox={`0 0 ${imageDimensions.width} ${imageDimensions.height}`}
+          preserveAspectRatio="none"
+        >
           {tooltips.map((tooltip, index) => {
             const colors = getTooltipColor(tooltip.type);
+            const { bbox, center } = tooltip.coordinates;
+            const isActive = clickedTooltip === index;
 
             return (
-              <div
-                key={index}
-                className={`flex-shrink-0 w-72 p-3 rounded-lg border-2 ${colors.border} ${colors.bg} ${colors.text} cursor-pointer transition-all duration-200 ${
-                  hoveredTooltip === index ? 'scale-105 shadow-lg' : 'opacity-90'
-                }`}
-                onMouseEnter={() => setHoveredTooltip(index)}
-                onMouseLeave={() => setHoveredTooltip(null)}
-              >
-                <div className="flex items-start gap-2">
-                  <div className={`flex-shrink-0 w-6 h-6 ${colors.iconBg} text-white rounded-full flex items-center justify-center text-sm font-bold`}>
-                    {colors.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm capitalize">
-                      {tooltip.object_class}
+              <g key={index}>
+                {/* Bounding Box - only show when clicked */}
+                {isActive && (
+                  <rect
+                    x={bbox.x1}
+                    y={bbox.y1}
+                    width={bbox.width}
+                    height={bbox.height}
+                    fill={colors.fill}
+                    stroke={colors.stroke}
+                    strokeWidth="6"
+                    className="transition-all duration-300"
+                    rx="8"
+                  />
+                )}
+
+                {/* Info Icon Button - Always visible */}
+                <g
+                  className="pointer-events-auto cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setClickedTooltip(clickedTooltip === index ? null : index);
+                  }}
+                >
+                  {/* Icon background circle */}
+                  <circle
+                    cx={center.x}
+                    cy={center.y}
+                    r="20"
+                    fill="white"
+                    opacity="0.95"
+                    className="transition-all duration-200"
+                  />
+                  <circle
+                    cx={center.x}
+                    cy={center.y}
+                    r="16"
+                    fill={colors.stroke}
+                    className="transition-all duration-200"
+                  />
+
+                  {/* Info "i" icon */}
+                  <text
+                    x={center.x}
+                    y={center.y}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fill="white"
+                    fontSize="20"
+                    fontWeight="bold"
+                    fontFamily="Arial, sans-serif"
+                    className="pointer-events-none select-none"
+                  >
+                    i
+                  </text>
+
+                  {/* Pulse animation for emphasis */}
+                  {!isActive && (
+                    <circle
+                      cx={center.x}
+                      cy={center.y}
+                      r="20"
+                      fill="none"
+                      stroke={colors.stroke}
+                      strokeWidth="2"
+                      opacity="0.5"
+                      className="animate-ping"
+                    />
+                  )}
+                </g>
+
+                {/* Tooltip Card - Positioned near object */}
+                {isActive && (
+                  <foreignObject
+                    x={Math.max(10, Math.min(bbox.x1, imageDimensions.width - 320))}
+                    y={Math.max(10, bbox.y2 + 10)}
+                    width="300"
+                    height="150"
+                    className="pointer-events-auto"
+                  >
+                    <div className={`p-4 rounded-lg shadow-2xl border-2 ${colors.cardBorder} ${colors.cardBg} ${colors.cardText} backdrop-blur-sm`}>
+                      <div className="flex items-start gap-2">
+                        <div className={`flex-shrink-0 w-8 h-8 ${colors.iconBg} text-white rounded-full flex items-center justify-center font-bold`}>
+                          {colors.icon}
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-bold text-sm capitalize mb-1">
+                            {tooltip.object_class}
+                          </div>
+                          <div className="text-xs leading-relaxed">
+                            {tooltip.message}
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setClickedTooltip(null);
+                          }}
+                          className="text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
-                    <div className="text-xs mt-1">
-                      {tooltip.message}
-                    </div>
-                  </div>
-                </div>
-              </div>
+                  </foreignObject>
+                )}
+              </g>
             );
           })}
+        </svg>
+      </div>
+
+      {/* Legend at bottom */}
+      <div className="mt-4 flex flex-wrap gap-2 text-sm text-gray-600">
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+          <span>Good Feng Shui</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-full bg-red-500"></div>
+          <span>Needs Attention</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+          <span>Can Improve</span>
+        </div>
+        <div className="ml-auto text-xs text-gray-400">
+          💡 Click the info icons to see details
         </div>
       </div>
     </div>

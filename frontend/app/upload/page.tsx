@@ -6,6 +6,7 @@ import { useEcho, useEchoClient } from '@merit-systems/echo-react-sdk';
 import { Auth0Button } from '@/components/Auth0Button';
 import { EchoSignIn } from '@/components/EchoSignIn';
 import { FengShuiVisualization } from '@/components/FengShuiVisualization';
+import { CircularProgress } from '@/components/CircularProgress';
 
 interface Tooltip {
   object_class: string;
@@ -169,7 +170,7 @@ export default function UploadPage() {
     <main className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8">
         {/* Header with Auth */}
-        <div className="max-w-4xl mx-auto mb-8 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Feng Shui AI</h1>
             <p className="text-sm text-gray-500 mt-1">Powered by Auth0 + Echo</p>
@@ -180,7 +181,7 @@ export default function UploadPage() {
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           {/* Status Card */}
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-8">
             <div className="flex flex-col gap-4">
@@ -343,29 +344,29 @@ export default function UploadPage() {
           {/* Results Section */}
           {result && (
             <div className="space-y-6">
-              {/* Score Card */}
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-gray-900">
-                    Feng Shui Score
-                  </h2>
-                  <div className="flex items-center gap-2">
-                    <div className="text-5xl font-bold text-blue-600">
-                      {result.score}
-                    </div>
-                    <div className="text-gray-400 text-2xl">/10</div>
+              {/* Score Card with Circular Progress */}
+              <div className="bg-white rounded-2xl shadow-lg p-8">
+                <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+                  <CircularProgress score={result.score} size={220} strokeWidth={16} />
+                  <div className="flex-1 text-center md:text-left">
+                    <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                      Your Feng Shui Score
+                    </h2>
+                    <p className="text-gray-600 leading-relaxed">
+                      {result.overall_analysis}
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* Interactive Visualization with Tooltips */}
+              {/* Interactive Visualization with Tooltips - LARGER */}
               {result.tooltips && result.tooltips.length > 0 && preview && (
-                <div className="bg-white rounded-2xl shadow-lg p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">
-                    Interactive Analysis
+                <div className="bg-white rounded-2xl shadow-lg p-8">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    🔍 Interactive Analysis
                   </h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Hover over the markers to see specific feng shui insights for each object
+                  <p className="text-sm text-gray-600 mb-6">
+                    Click the info icons on the image to see specific feng shui insights for each object
                   </p>
                   <FengShuiVisualization
                     imageUrl={preview}
@@ -374,15 +375,6 @@ export default function UploadPage() {
                 </div>
               )}
 
-              {/* Overall Analysis */}
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">
-                  Overall Analysis
-                </h3>
-                <p className="text-gray-700 leading-relaxed">
-                  {result.overall_analysis}
-                </p>
-              </div>
 
               {/* Strengths & Weaknesses */}
               <div className="grid md:grid-cols-2 gap-6">
