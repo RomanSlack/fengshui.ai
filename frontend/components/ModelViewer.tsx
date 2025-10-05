@@ -49,17 +49,18 @@ function GLTFModel({ url, roughness, metalness }: { url: string; roughness: numb
   );
 }
 
-function FBXModel({ url, roughness, metalness }: { url: string; roughness: number; metalness: number }) {
+// Helper hook to fetch FBX with ngrok headers
+function useFBXWithHeaders(url: string) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch FBX with custom headers for ngrok support
   useEffect(() => {
+    let isMounted = true;
+
     const fetchFBX = async () => {
       try {
         console.log('[FBX] Fetching model from:', url);
 
-        // Check if URL contains ngrok
         const isNgrok = url.includes('ngrok');
         const headers: HeadersInit = {};
         if (isNgrok) {
@@ -74,35 +75,41 @@ function FBXModel({ url, roughness, metalness }: { url: string; roughness: numbe
 
         const blob = await response.blob();
         const objectUrl = URL.createObjectURL(blob);
-        console.log('[FBX] Created blob URL:', objectUrl);
-        setBlobUrl(objectUrl);
+
+        if (isMounted) {
+          console.log('[FBX] Created blob URL:', objectUrl);
+          setBlobUrl(objectUrl);
+        } else {
+          URL.revokeObjectURL(objectUrl);
+        }
       } catch (err) {
         console.error('[FBX] Fetch error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load model');
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Failed to load model');
+        }
       }
     };
 
     fetchFBX();
 
     return () => {
-      // Cleanup will be handled when component unmounts or url changes
-    };
-  }, [url]);
-
-  // Cleanup blob URL when component unmounts
-  useEffect(() => {
-    return () => {
+      isMounted = false;
       if (blobUrl) {
         URL.revokeObjectURL(blobUrl);
       }
     };
-  }, [blobUrl]);
+  }, [url]);
 
+  return { blobUrl, error };
+}
+
+function FBXModel({ url, roughness, metalness }: { url: string; roughness: number; metalness: number }) {
+  const { blobUrl, error } = useFBXWithHeaders(url);
+
+  // useLoader will suspend until the model is loaded
   const fbx = useLoader(FBXLoader, blobUrl || '', (loader) => {
-    // Configure loader to handle texture paths
     const manager = new THREE.LoadingManager();
     manager.setURLModifier((textureUrl) => {
-      // If texture URL is a file path, ignore it and use a default material
       if (textureUrl.startsWith('/') || textureUrl.includes(':\\')) {
         console.warn('External texture path detected, using default material:', textureUrl);
         return '';
@@ -110,19 +117,7 @@ function FBXModel({ url, roughness, metalness }: { url: string; roughness: numbe
       return textureUrl;
     });
     loader.manager = manager;
-  }, undefined, (err) => {
-    console.error('[FBX] Loader error:', err);
-    setError('Failed to parse FBX file');
   });
-
-  if (error) {
-    throw new Error(error);
-  }
-
-  if (!blobUrl) {
-    // Return null while loading
-    return null;
-  }
 
   useEffect(() => {
     // Ensure textures are loaded and materials are set up correctly

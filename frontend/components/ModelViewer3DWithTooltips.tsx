@@ -41,29 +41,18 @@ interface ModelViewer3DWithTooltipsProps {
   imageHeight: number;
 }
 
-function FBXModelWithMarkers({
-  url,
-  tooltips,
-  imageWidth,
-  imageHeight,
-  onMarkersReady
-}: {
-  url: string;
-  tooltips: Tooltip[];
-  imageWidth: number;
-  imageHeight: number;
-  onMarkersReady: (markers: TooltipMarker[]) => void;
-}) {
+// Helper hook to fetch FBX with ngrok headers
+function useFBXWithHeaders(url: string) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch FBX with custom headers for ngrok support
   useEffect(() => {
+    let isMounted = true;
+
     const fetchFBX = async () => {
       try {
         console.log('[FBX] Fetching model from:', url);
 
-        // Check if URL contains ngrok
         const isNgrok = url.includes('ngrok');
         const headers: HeadersInit = {};
         if (isNgrok) {
@@ -78,25 +67,50 @@ function FBXModelWithMarkers({
 
         const blob = await response.blob();
         const objectUrl = URL.createObjectURL(blob);
-        console.log('[FBX] Created blob URL:', objectUrl);
-        setBlobUrl(objectUrl);
+
+        if (isMounted) {
+          console.log('[FBX] Created blob URL:', objectUrl);
+          setBlobUrl(objectUrl);
+        } else {
+          URL.revokeObjectURL(objectUrl);
+        }
       } catch (err) {
         console.error('[FBX] Fetch error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load model');
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Failed to load model');
+        }
       }
     };
 
     fetchFBX();
-  }, [url]);
 
-  // Cleanup blob URL when component unmounts
-  useEffect(() => {
     return () => {
+      isMounted = false;
       if (blobUrl) {
         URL.revokeObjectURL(blobUrl);
       }
     };
-  }, [blobUrl]);
+  }, [url]);
+
+  return { blobUrl, error };
+}
+
+function FBXModelWithMarkers({
+  url,
+  tooltips,
+  imageWidth,
+  imageHeight,
+  onMarkersReady
+}: {
+  url: string;
+  tooltips: Tooltip[];
+  imageWidth: number;
+  imageHeight: number;
+  onMarkersReady: (markers: TooltipMarker[]) => void;
+}) {
+  const { blobUrl, error } = useFBXWithHeaders(url);
+  const { camera } = useThree();
+  const meshRef = useRef<THREE.Group>(null);
 
   const fbx = useLoader(FBXLoader, blobUrl || '', (loader) => {
     const manager = new THREE.LoadingManager();
@@ -108,22 +122,7 @@ function FBXModelWithMarkers({
       return textureUrl;
     });
     loader.manager = manager;
-  }, undefined, (err) => {
-    console.error('[FBX] Loader error:', err);
-    setError('Failed to parse FBX file');
   });
-
-  if (error) {
-    throw new Error(error);
-  }
-
-  if (!blobUrl) {
-    // Return null while loading
-    return null;
-  }
-
-  const { camera } = useThree();
-  const meshRef = useRef<THREE.Group>(null);
 
   useEffect(() => {
     // Configure materials
