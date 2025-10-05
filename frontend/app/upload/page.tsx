@@ -628,7 +628,7 @@ export default function UploadPage() {
                     alt="Feng Shui Mascot"
                     width={240}
                     height={240}
-                    className="object-contain drop-shadow-2xl"
+                    className="object-contain drop-shadow-2xl w-auto h-auto"
                     priority
                   />
                 </div>

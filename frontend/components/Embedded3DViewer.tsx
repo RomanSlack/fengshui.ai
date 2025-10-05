@@ -36,6 +36,9 @@ export default function Embedded3DViewer({ modelId }: Embedded3DViewerProps) {
       return;
     }
 
+    let interval: NodeJS.Timeout | null = null;
+    let isActive = true;
+
     // Start polling for model status
     const checkStatus = async () => {
       try {
@@ -46,6 +49,9 @@ export default function Embedded3DViewer({ modelId }: Embedded3DViewerProps) {
         }
 
         const data = await response.json();
+
+        if (!isActive) return;
+
         setStatus(data.status);
 
         if (data.status === 'completed' && data.filename) {
@@ -54,17 +60,17 @@ export default function Embedded3DViewer({ modelId }: Embedded3DViewerProps) {
           setModelUrl(fileUrl);
 
           // Stop polling
-          if (pollingInterval) {
-            clearInterval(pollingInterval);
-            setPollingInterval(null);
+          if (interval) {
+            clearInterval(interval);
+            interval = null;
           }
         } else if (data.status === 'failed') {
           setError(data.error || 'Model generation failed');
 
           // Stop polling
-          if (pollingInterval) {
-            clearInterval(pollingInterval);
-            setPollingInterval(null);
+          if (interval) {
+            clearInterval(interval);
+            interval = null;
           }
         }
       } catch (err) {
@@ -77,26 +83,16 @@ export default function Embedded3DViewer({ modelId }: Embedded3DViewerProps) {
     checkStatus();
 
     // Poll every 2 seconds
-    const interval = setInterval(checkStatus, 2000);
-    setPollingInterval(interval);
+    interval = setInterval(checkStatus, 2000);
 
     // Cleanup on unmount
     return () => {
+      isActive = false;
       if (interval) {
         clearInterval(interval);
       }
     };
-  }, [modelId, pollingInterval]);
-
-  // Cleanup interval on status change
-  useEffect(() => {
-    if (status === 'completed' || status === 'failed') {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-        setPollingInterval(null);
-      }
-    }
-  }, [status, pollingInterval]);
+  }, [modelId]);
 
   if (!modelId) {
     return null;
