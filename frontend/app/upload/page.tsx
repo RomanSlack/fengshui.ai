@@ -47,6 +47,8 @@ export default function UploadPage() {
   const [error, setError] = useState<string | null>(null);
   const [showMascotWelcome, setShowMascotWelcome] = useState(true);
   const [mascotFadingOut, setMascotFadingOut] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [paywallFadingOut, setPaywallFadingOut] = useState(false);
 
   // Auth0 integration
   const { isAuthenticated: isAuth0Authenticated, user: auth0User } = useAuth0();
@@ -80,30 +82,7 @@ export default function UploadPage() {
   const echoClient = useEchoClient({
     apiUrl: 'https://echo.merit.systems'
   });
-  const [requestCount, setRequestCount] = useState(0);
   const [balance, setBalance] = useState<number | null>(null);
-  const [showPaymentPrompt, setShowPaymentPrompt] = useState(false);
-
-  // TESTING: Paywall toggle (disable for testing)
-  const [paywallEnabled, setPaywallEnabled] = useState(() => {
-    const stored = localStorage.getItem('fengshui_paywall_enabled');
-    return stored === null ? true : stored === 'true';
-  });
-
-  const FREE_REQUESTS = 3;
-
-  // Save paywall preference
-  useEffect(() => {
-    localStorage.setItem('fengshui_paywall_enabled', paywallEnabled.toString());
-  }, [paywallEnabled]);
-
-  // Load request count from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem('fengshui_request_count');
-    if (stored) {
-      setRequestCount(parseInt(stored, 10));
-    }
-  }, []);
 
   // Check balance if authenticated
   useEffect(() => {
@@ -113,6 +92,17 @@ export default function UploadPage() {
       }).catch(console.error);
     }
   }, [isEchoAuthenticated, echoClient]);
+
+  // Auto-dismiss paywall when Echo connects
+  useEffect(() => {
+    if (isEchoAuthenticated && showPaywall) {
+      setPaywallFadingOut(true);
+      setTimeout(() => {
+        setShowPaywall(false);
+        setPaywallFadingOut(false);
+      }, 700);
+    }
+  }, [isEchoAuthenticated, showPaywall]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -136,21 +126,17 @@ export default function UploadPage() {
       return;
     }
 
-    // TESTING: Skip paywall checks if disabled
-    if (paywallEnabled) {
-      // Check if user has free requests left (not signed in with Auth0)
-      if (!isAuth0Authenticated && requestCount >= FREE_REQUESTS) {
-        setShowPaymentPrompt(true);
-        setError("You've used your 3 free analyses. Please sign in with Google to continue!");
-        return;
-      }
+    // Check if user needs to connect Echo (used free analysis and not connected)
+    const usedFreeAnalysis = localStorage.getItem('fengshui_used_free_analysis') === 'true';
+    if (usedFreeAnalysis && !isEchoAuthenticated) {
+      setError("Please connect Echo to continue analyzing");
+      return;
+    }
 
-      // Check if authenticated user has balance (for Echo payments)
-      if (isAuth0Authenticated && isEchoAuthenticated && balance !== null && balance <= 0) {
-        setShowPaymentPrompt(true);
-        setError("Insufficient balance. Please add credits to continue!");
-        return;
-      }
+    // Check if Echo user has sufficient balance
+    if (isEchoAuthenticated && balance !== null && balance < 100) {
+      setError("Insufficient balance. Please add credits to continue!");
+      return;
     }
 
     setLoading(true);
@@ -184,17 +170,16 @@ export default function UploadPage() {
 
       setResult(data);
 
-      // Increment request count and deduct balance (only if paywall enabled)
-      if (paywallEnabled) {
-        if (!isAuth0Authenticated) {
-          const newCount = requestCount + 1;
-          setRequestCount(newCount);
-          localStorage.setItem('fengshui_request_count', newCount.toString());
-        } else if (isAuth0Authenticated && isEchoAuthenticated && echoClient) {
-          await echoClient.balance.deduct({ amount: 100 });
-          const bal = await echoClient.balance.get();
-          setBalance(bal.balance);
-        }
+      // Mark free analysis as used (if not Echo authenticated)
+      if (!isEchoAuthenticated) {
+        localStorage.setItem('fengshui_used_free_analysis', 'true');
+      }
+
+      // Deduct balance if Echo user
+      if (isEchoAuthenticated && echoClient) {
+        await echoClient.balance.deduct({ amount: 100 });
+        const bal = await echoClient.balance.get();
+        setBalance(bal.balance);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to analyze image");
@@ -203,24 +188,33 @@ export default function UploadPage() {
     }
   };
 
-  const handleAddCredits = async () => {
-    if (!echoClient) return;
-    try {
-      const paymentLink = await echoClient.balance.createPaymentLink({
-        amount: 5000,
-        returnUrl: window.location.href
-      });
-      window.location.href = paymentLink.url;
-    } catch (err) {
-      setError("Failed to create payment link");
+  const handleReset = () => {
+    // Check if user has used free analysis and not connected to Echo
+    const usedFreeAnalysis = localStorage.getItem('fengshui_used_free_analysis') === 'true';
+
+    if (usedFreeAnalysis && !isEchoAuthenticated) {
+      // Show paywall screen
+      setShowPaywall(true);
+      setSelectedFile(null);
+      setPreview(null);
+      setResult(null);
+      setError(null);
+    } else {
+      // Normal reset - go back to upload
+      setSelectedFile(null);
+      setPreview(null);
+      setResult(null);
+      setError(null);
     }
   };
 
-  const handleReset = () => {
-    setSelectedFile(null);
-    setPreview(null);
-    setResult(null);
-    setError(null);
+  const handleConnectEcho = async () => {
+    if (!echoClient) return;
+    try {
+      await echoClient.connect();
+    } catch (err) {
+      setError("Failed to connect Echo");
+    }
   };
 
   const handleContinueFromMascot = () => {
@@ -289,15 +283,51 @@ export default function UploadPage() {
           <h1 className="text-5xl font-serif font-light text-zen-pine tracking-calm">
             Feng Shui Analysis
           </h1>
-          {!showMascotWelcome && (
+          {!showMascotWelcome && !showPaywall && (
             <p className="text-lg text-zen-earth font-light leading-relaxed max-w-2xl mx-auto">
               Upload a photo of your room to receive personalized feng shui insights and harmonize your space
             </p>
           )}
         </div>
 
+        {/* Paywall Screen - After first free analysis */}
+        {showPaywall && !preview && !loading && !result && (
+          <div className={`flex flex-col items-center space-y-8 transition-opacity duration-700 ease-out ${paywallFadingOut ? 'opacity-0' : 'opacity-100'}`}>
+            {/* Speech Bubble */}
+            <div className="relative max-w-xl mb-4">
+              <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 border border-zen-sage/20">
+                <p className="text-lg font-light text-zen-pine text-center leading-relaxed">
+                  You've used your 1 free analysis! Connect Echo to analyze as many spaces as you like and unlock unlimited feng shui insights.
+                </p>
+                {/* Speech bubble tail pointing down to mascot */}
+                <div className="absolute bottom-[-8px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-white/95"></div>
+              </div>
+            </div>
+
+            {/* Mascot Image - Pondering */}
+            <div className="relative">
+              <Image
+                src="/mascot_pondering.png"
+                alt="Feng Shui Mascot"
+                width={280}
+                height={280}
+                className="object-contain"
+                priority
+              />
+            </div>
+
+            {/* Connect Echo Button */}
+            <button
+              onClick={handleConnectEcho}
+              className="px-16 py-4 text-lg rounded-full bg-gradient-to-br from-zen-sage to-zen-pine hover:shadow-3xl text-white transition-all duration-500 ease-out shadow-2xl hover:scale-105 font-light tracking-calm mt-4"
+            >
+              Connect Echo
+            </button>
+          </div>
+        )}
+
         {/* Step 0: Mascot Welcome - Initial greeting */}
-        {showMascotWelcome && !preview && !loading && !result && (
+        {showMascotWelcome && !preview && !loading && !result && !showPaywall && (
           <div className={`flex flex-col items-center space-y-8 transition-opacity duration-700 ease-out ${mascotFadingOut ? 'opacity-0' : 'opacity-100'}`}>
             {/* Speech Bubble */}
             <div className="relative max-w-xl mb-4">
@@ -333,7 +363,7 @@ export default function UploadPage() {
         )}
 
         {/* Step 1: Upload Section - Only show when no file selected */}
-        {!showMascotWelcome && !preview && !loading && !result && (
+        {!showMascotWelcome && !showPaywall && !preview && !loading && !result && (
           <div className="transition-all duration-700 ease-out">
             <div className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-lg p-12 border border-gray-200">
               <div className="text-center mb-8">
