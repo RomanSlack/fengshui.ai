@@ -18,11 +18,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
       }}
       cacheLocation="localstorage"
       useRefreshTokens={true}
+      skipRedirectCallback={typeof window !== 'undefined' && window.location.search.includes('echo')}
     >
       <EchoProvider
         config={{
           appId,
-          redirectUri: typeof window !== 'undefined' ? `${window.location.origin}/upload` : 'http://localhost:3000/upload',
+          redirectUri: typeof window !== 'undefined' ? `${window.location.origin}/?echo=callback` : 'http://localhost:3000/?echo=callback',
         }}
       >
         {children}
