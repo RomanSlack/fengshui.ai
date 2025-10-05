@@ -45,7 +45,7 @@ export default function UploadPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [showMascotWelcome, setShowMascotWelcome] = useState(true);
+  const [showMascotWelcome, setShowMascotWelcome] = useState(false);
   const [mascotFadingOut, setMascotFadingOut] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [paywallFadingOut, setPaywallFadingOut] = useState(false);
@@ -56,6 +56,21 @@ export default function UploadPage() {
   // Trigger fade-in on mount
   useEffect(() => {
     setFadeIn(true);
+  }, []);
+
+  // Check on mount if user should see paywall or welcome mascot
+  useEffect(() => {
+    const usedFreeAnalysis = localStorage.getItem('fengshui_used_free_analysis') === 'true';
+
+    if (usedFreeAnalysis) {
+      // User has used free analysis - show paywall (will auto-dismiss if Echo connected)
+      setShowPaywall(true);
+      setShowMascotWelcome(false);
+    } else {
+      // First time user - show welcome mascot
+      setShowMascotWelcome(true);
+      setShowPaywall(false);
+    }
   }, []);
 
   // Listen for navigation events to trigger fade-out
@@ -78,7 +93,7 @@ export default function UploadPage() {
   }, [isAuth0Authenticated, authModalVisible]);
 
   // Echo integration for payments
-  const { isAuthenticated: isEchoAuthenticated } = useEcho();
+  const { isAuthenticated: isEchoAuthenticated, signIn: echoSignIn } = useEcho();
   const echoClient = useEchoClient({
     apiUrl: 'https://echo.merit.systems'
   });
@@ -208,12 +223,9 @@ export default function UploadPage() {
     }
   };
 
-  const handleConnectEcho = async () => {
-    if (!echoClient) return;
-    try {
-      await echoClient.connect();
-    } catch (err) {
-      setError("Failed to connect Echo");
+  const handleConnectEcho = () => {
+    if (echoSignIn) {
+      echoSignIn();
     }
   };
 
