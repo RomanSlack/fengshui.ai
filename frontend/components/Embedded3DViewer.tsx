@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { API_ENDPOINTS } from '@/lib/config';
 
 const ModelViewer = dynamic(() => import('@/components/ModelViewer'), {
   ssr: false,
@@ -42,7 +43,7 @@ export default function Embedded3DViewer({ modelId }: Embedded3DViewerProps) {
     // Start polling for model status
     const checkStatus = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/models/status/${modelId}`);
+        const response = await fetch(API_ENDPOINTS.modelStatus(modelId));
 
         if (!response.ok) {
           throw new Error('Failed to check model status');
@@ -56,7 +57,7 @@ export default function Embedded3DViewer({ modelId }: Embedded3DViewerProps) {
 
         if (data.status === 'completed' && data.filename) {
           // Model is ready - set the URL
-          const fileUrl = `http://localhost:8000/models/${data.filename}`;
+          const fileUrl = API_ENDPOINTS.modelDownload(data.filename);
           setModelUrl(fileUrl);
 
           // Stop polling

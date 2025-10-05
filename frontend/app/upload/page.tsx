@@ -8,6 +8,7 @@ import { TopNav } from '@/components/TopNav';
 import { CircularProgress } from '@/components/CircularProgress';
 import HybridViewer from '@/components/HybridViewer';
 import Image from 'next/image';
+import { API_ENDPOINTS } from '@/lib/config';
 
 interface Tooltip {
   object_class: string;
@@ -197,7 +198,7 @@ export default function UploadPage() {
       const formData = new FormData();
       formData.append("file", selectedFile);
 
-      const response = await fetch("http://localhost:8000/analyze/", {
+      const response = await fetch(API_ENDPOINTS.analyze, {
         method: "POST",
         body: formData,
       });
@@ -309,7 +310,7 @@ export default function UploadPage() {
     try {
       setIsPlayingAudio(true);
 
-      const response = await fetch("http://localhost:8000/tts/generate", {
+      const response = await fetch(API_ENDPOINTS.ttsGenerate, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

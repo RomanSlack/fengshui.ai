@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FengShuiVisualization } from './FengShuiVisualization';
 import dynamic from 'next/dynamic';
+import { API_ENDPOINTS } from '@/lib/config';
 
 const ModelViewer3DWithTooltips = dynamic(() => import('./ModelViewer3DWithTooltips'), {
   ssr: false,
@@ -74,7 +75,7 @@ export default function HybridViewer({
 
     const checkStatus = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/models/status/${modelId}`);
+        const response = await fetch(API_ENDPOINTS.modelStatus(modelId));
 
         if (!response.ok) {
           throw new Error('Failed to check model status');
@@ -87,7 +88,7 @@ export default function HybridViewer({
         setModelStatus(data.status);
 
         if (data.status === 'completed' && data.filename) {
-          const fileUrl = `http://localhost:8000/models/${data.filename}`;
+          const fileUrl = API_ENDPOINTS.modelDownload(data.filename);
           setModelUrl(fileUrl);
 
           if (interval) {
