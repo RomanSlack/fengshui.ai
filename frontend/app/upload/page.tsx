@@ -5,9 +5,8 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { useEcho, useEchoClient } from '@merit-systems/echo-react-sdk';
 import { Auth0Button } from '@/components/Auth0Button';
 import { TopNav } from '@/components/TopNav';
-import { FengShuiVisualization } from '@/components/FengShuiVisualization';
 import { CircularProgress } from '@/components/CircularProgress';
-import Embedded3DViewer from '@/components/Embedded3DViewer';
+import HybridViewer from '@/components/HybridViewer';
 import Image from 'next/image';
 
 interface Tooltip {
@@ -659,22 +658,13 @@ export default function UploadPage() {
               </div>
             </div>
 
-            {/* Interactive Visualization */}
+            {/* Hybrid 2D/3D Visualization */}
             {result.tooltips && result.tooltips.length > 0 && preview && (
-              <div className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-lg p-12 border border-gray-200">
-                <div className="mb-8">
-                  <h3 className="text-2xl font-serif font-light text-zen-pine mb-2 tracking-calm">
-                    Interactive Energy Map
-                  </h3>
-                  <p className="text-zen-earth font-light">
-                    Hover over the icons to explore specific insights about each element in your space
-                  </p>
-                </div>
-                <FengShuiVisualization
-                  imageUrl={preview}
-                  tooltips={result.tooltips}
-                />
-              </div>
+              <HybridViewer
+                imageUrl={preview}
+                tooltips={result.tooltips}
+                modelId={result.model_3d?.model_id || null}
+              />
             )}
 
             {/* Strengths & Weaknesses Grid */}
@@ -741,11 +731,6 @@ export default function UploadPage() {
                 ))}
               </ul>
             </div>
-
-            {/* 3D Model Viewer */}
-            {result.model_3d && result.model_3d.model_id && (
-              <Embedded3DViewer modelId={result.model_3d.model_id} />
-            )}
 
             {/* New Analysis Button */}
             <div className="text-center pt-8">
