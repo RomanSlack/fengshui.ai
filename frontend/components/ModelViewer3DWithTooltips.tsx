@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState, useRef } from 'react';
-import { Canvas, useLoader } from '@react-three/fiber';
+import { Canvas, useLoader, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Environment, Center } from '@react-three/drei';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import * as THREE from 'three';
@@ -28,6 +28,11 @@ interface Tooltip {
   confidence: number;
 }
 
+interface TooltipMarker {
+  position: THREE.Vector3;
+  tooltip: Tooltip;
+  index: number;
+}
 
 interface ModelViewer3DWithTooltipsProps {
   modelUrl: string;
@@ -36,7 +41,19 @@ interface ModelViewer3DWithTooltipsProps {
   imageHeight: number;
 }
 
-function FBXModel({ url }: { url: string }) {
+function FBXModelWithMarkers({
+  url,
+  tooltips,
+  imageWidth,
+  imageHeight,
+  onMarkersReady
+}: {
+  url: string;
+  tooltips: Tooltip[];
+  imageWidth: number;
+  imageHeight: number;
+  onMarkersReady: (markers: TooltipMarker[]) => void;
+}) {
   const fbx = useLoader(FBXLoader, url, (loader) => {
     const manager = new THREE.LoadingManager();
     manager.setURLModifier((textureUrl) => {
@@ -48,6 +65,9 @@ function FBXModel({ url }: { url: string }) {
     });
     loader.manager = manager;
   });
+
+  const { camera } = useThree();
+  const meshRef = useRef<THREE.Group>(null);
 
   useEffect(() => {
     // Configure materials
@@ -84,16 +104,64 @@ function FBXModel({ url }: { url: string }) {
         });
       }
     });
-  }, [fbx]);
+
+    // Raycast to find Z-depth for tooltips
+    if (meshRef.current && tooltips.length > 0) {
+      const raycaster = new THREE.Raycaster();
+      const markers: TooltipMarker[] = [];
+
+      tooltips.forEach((tooltip, index) => {
+        // Convert 2D image coordinates to NDC
+        const x = (tooltip.coordinates.center.x / imageWidth) * 2 - 1;
+        const y = -(tooltip.coordinates.center.y / imageHeight) * 2 + 1;
+
+        raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
+        const intersects = raycaster.intersectObject(meshRef.current!, true);
+
+        if (intersects.length > 0) {
+          // Get the 3D position on mesh surface
+          const worldPos = intersects[0].point.clone();
+
+          // Slight offset toward camera to prevent z-fighting
+          const offsetDirection = new THREE.Vector3()
+            .subVectors(camera.position, worldPos)
+            .normalize()
+            .multiplyScalar(0.1);
+          worldPos.add(offsetDirection);
+
+          markers.push({
+            position: worldPos,
+            tooltip,
+            index
+          });
+        }
+      });
+
+      onMarkersReady(markers);
+    }
+  }, [fbx, tooltips, imageWidth, imageHeight, camera, onMarkersReady]);
 
   return (
     <Center>
-      <primitive object={fbx} scale={0.5} />
+      <primitive ref={meshRef} object={fbx} scale={0.5} />
     </Center>
   );
 }
 
-function Scene({ modelUrl }: { modelUrl: string }) {
+
+function Scene({
+  modelUrl,
+  tooltips,
+  imageWidth,
+  imageHeight,
+  onMarkersReady
+}: {
+  modelUrl: string;
+  tooltips: Tooltip[];
+  imageWidth: number;
+  imageHeight: number;
+  onMarkersReady: (markers: TooltipMarker[]) => void;
+}) {
   return (
     <>
       {/* Camera: position={[x, y, z]} - Start facing directly at mesh from front */}
@@ -134,8 +202,15 @@ function Scene({ modelUrl }: { modelUrl: string }) {
       <Environment preset="studio" background={false} />
 
       <Suspense fallback={null}>
-        <FBXModel url={modelUrl} />
+        <FBXModelWithMarkers
+          url={modelUrl}
+          tooltips={tooltips}
+          imageWidth={imageWidth}
+          imageHeight={imageHeight}
+          onMarkersReady={onMarkersReady}
+        />
       </Suspense>
+
     </>
   );
 }
@@ -146,51 +221,14 @@ export default function ModelViewer3DWithTooltips({
   imageWidth,
   imageHeight
 }: ModelViewer3DWithTooltipsProps) {
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [key, setKey] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setKey(prev => prev + 1);
   }, [modelUrl]);
 
-  // Get screen positions from 2D coordinates relative to container
-  const getScreenPosition = (tooltip: Tooltip) => {
-    if (!containerRef.current) return { x: 0, y: 0 };
-
-    const rect = containerRef.current.getBoundingClientRect();
-    const containerWidth = rect.width;
-    const containerHeight = rect.height;
-
-    // Scale from image coordinates to container coordinates
-    const x = (tooltip.coordinates.center.x / imageWidth) * containerWidth;
-    const y = (tooltip.coordinates.center.y / imageHeight) * containerHeight;
-
-    return { x, y };
-  };
-
-  const getTooltipColor = (type: string) => {
-    switch (type) {
-      case 'good':
-        return {
-          color: '#22c55e',
-          icon: '✓'
-        };
-      case 'bad':
-        return {
-          color: '#ef4444',
-          icon: '✗'
-        };
-      default:
-        return {
-          color: '#eab308',
-          icon: '!'
-        };
-    }
-  };
-
   return (
-    <div ref={containerRef} className="w-full h-full relative">
+    <div className="w-full h-full relative">
       <style jsx global>{`
         @keyframes fadeIn {
           from {
@@ -215,119 +253,14 @@ export default function ModelViewer3DWithTooltips({
         }}
         style={{ background: '#1a1a1a' }}
       >
-        <Scene modelUrl={modelUrl} />
+        <Scene
+          modelUrl={modelUrl}
+          tooltips={tooltips}
+          imageWidth={imageWidth}
+          imageHeight={imageHeight}
+          onMarkersReady={() => {}}
+        />
       </Canvas>
-
-      {/* Overlay tooltips using original 2D coordinates */}
-      {tooltips.map((tooltip, idx) => {
-        const screenPos = getScreenPosition(tooltip);
-
-        const colors = getTooltipColor(tooltip.type);
-        const isActive = activeIndex === idx;
-
-        return (
-          <div
-            key={idx}
-            className="absolute pointer-events-auto"
-            style={{
-              left: `${screenPos.x}px`,
-              top: `${screenPos.y}px`,
-              transform: 'translate(-50%, -50%)',
-              zIndex: isActive ? 100 : 50
-            }}
-          >
-            <div
-              className="relative cursor-pointer"
-              onMouseEnter={() => setActiveIndex(idx)}
-              onMouseLeave={() => setActiveIndex(null)}
-              onClick={() => setActiveIndex(activeIndex === idx ? null : idx)}
-            >
-              {/* Icon circle - fixed size regardless of camera */}
-              <div
-                className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl transition-all duration-200 hover:scale-110"
-                style={{
-                  backgroundColor: colors.color,
-                  boxShadow: isActive ? `0 0 30px ${colors.color}` : `0 4px 20px rgba(0,0,0,0.5)`
-                }}
-              >
-                i
-              </div>
-
-              {/* Pulse ring when not active */}
-              {!isActive && (
-                <div
-                  className="absolute inset-0 rounded-full animate-ping opacity-75"
-                  style={{
-                    backgroundColor: colors.color
-                  }}
-                />
-              )}
-
-              {/* Tooltip card - appears on hover */}
-              {isActive && (
-                <div
-                  className="absolute left-1/2 -translate-x-1/2 top-16 w-96 max-w-[90vw]"
-                  style={{
-                    animation: 'fadeIn 0.3s ease-out',
-                    zIndex: 1000
-                  }}
-                >
-                  <div
-                    className="rounded-2xl shadow-2xl p-8 border-4 backdrop-blur-md"
-                    style={{
-                      backgroundColor: tooltip.type === 'good'
-                        ? 'rgb(240, 253, 244)'
-                        : tooltip.type === 'bad'
-                        ? 'rgb(254, 242, 242)'
-                        : 'rgb(254, 252, 232)',
-                      borderColor: colors.color,
-                      borderWidth: '4px'
-                    }}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div
-                        className="flex-shrink-0 w-14 h-14 text-white rounded-full flex items-center justify-center font-bold text-2xl"
-                        style={{ backgroundColor: colors.color }}
-                      >
-                        {colors.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-bold text-2xl capitalize mb-3" style={{
-                          color: tooltip.type === 'good'
-                            ? 'rgb(20, 83, 45)'
-                            : tooltip.type === 'bad'
-                            ? 'rgb(127, 29, 29)'
-                            : 'rgb(113, 63, 18)'
-                        }}>
-                          {tooltip.object_class}
-                        </div>
-                        <div className="text-xl leading-relaxed" style={{
-                          color: tooltip.type === 'good'
-                            ? 'rgb(22, 101, 52)'
-                            : tooltip.type === 'bad'
-                            ? 'rgb(153, 27, 27)'
-                            : 'rgb(133, 77, 14)'
-                        }}>
-                          {tooltip.message}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  {/* Arrow pointing to icon */}
-                  <div
-                    className="absolute left-1/2 -translate-x-1/2 -top-2 w-0 h-0"
-                    style={{
-                      borderLeft: '8px solid transparent',
-                      borderRight: '8px solid transparent',
-                      borderBottom: `8px solid ${colors.color}`
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })}
     </div>
   );
 }
