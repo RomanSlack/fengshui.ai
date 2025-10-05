@@ -109,10 +109,10 @@ Optional: Echo payment for credits
 
 ### Files Modified
 
-- ✅ [frontend/app/providers.tsx](frontend/app/providers.tsx) - Added Auth0Provider
-- ✅ [frontend/components/Auth0Button.tsx](frontend/components/Auth0Button.tsx) - Google sign-in button
-- ✅ [frontend/app/upload/page.tsx](frontend/app/upload/page.tsx) - Auth0 integration
-- ✅ [frontend/.env.local](frontend/.env.local) - Auth0 credentials
+- ✅ [frontend/app/providers.tsx](../frontend/app/providers.tsx) - Added Auth0Provider
+- ✅ [frontend/components/Auth0Button.tsx](../frontend/components/Auth0Button.tsx) - Google sign-in button
+- ✅ [frontend/app/upload/page.tsx](../frontend/app/upload/page.tsx) - Auth0 integration
+- ✅ [frontend/.env.local](../frontend/.env.local) - Auth0 credentials
 
 ### Authentication Hooks
 

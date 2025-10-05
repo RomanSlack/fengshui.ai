@@ -1,0 +1,1 @@
+please read this document understand it then report back to me, document: fengshui.ai/amnesia_codebase.md

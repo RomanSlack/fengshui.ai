@@ -70,20 +70,20 @@
 ## 📁 Files Modified
 
 ### New Components:
-1. **[frontend/components/CircularProgress.tsx](frontend/components/CircularProgress.tsx)**
+1. **[frontend/components/CircularProgress.tsx](../frontend/components/CircularProgress.tsx)**
    - Animated SVG circular progress bar
    - Dynamic color based on score
    - Smooth transitions and labels
 
 ### Updated Components:
-2. **[frontend/components/FengShuiVisualization.tsx](frontend/components/FengShuiVisualization.tsx)**
+2. **[frontend/components/FengShuiVisualization.tsx](../frontend/components/FengShuiVisualization.tsx)**
    - Click-based tooltips (not hover)
    - Info icon design with pulse animation
    - Transparent until interaction
    - Close on outside click
    - Legend with instructions
 
-3. **[frontend/app/upload/page.tsx](frontend/app/upload/page.tsx)**
+3. **[frontend/app/upload/page.tsx](../frontend/app/upload/page.tsx)**
    - Integrated CircularProgress component
    - Increased max-width to `max-w-7xl`
    - Removed duplicate "Overall Analysis" section

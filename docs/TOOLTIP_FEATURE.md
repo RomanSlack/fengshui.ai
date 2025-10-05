@@ -53,14 +53,14 @@ Your Feng Shui AI app now has **interactive tooltips** that highlight specific o
 ## 📁 Files Modified
 
 ### Backend
-- **[backend/main.py](backend/main.py)**
+- **[backend/main.py](../backend/main.py)**
   - `get_gemini_client()`: Lazy client initialization (fixed cleanup error)
   - `call_gemini_fengshui()`: Updated to accept objects, return JSON
   - `/analyze/` endpoint: Combines detection + analysis with coordinates
 
 ### Frontend
-- **[frontend/components/FengShuiVisualization.tsx](frontend/components/FengShuiVisualization.tsx)**: New interactive visualization component
-- **[frontend/app/upload/page.tsx](frontend/app/upload/page.tsx)**: Updated to display structured results with tooltips
+- **[frontend/components/FengShuiVisualization.tsx](../frontend/components/FengShuiVisualization.tsx)**: New interactive visualization component
+- **[frontend/app/upload/page.tsx](../frontend/app/upload/page.tsx)**: Updated to display structured results with tooltips
 
 ## 🎨 Tooltip Types
 
