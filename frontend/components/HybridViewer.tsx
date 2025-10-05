@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FengShuiVisualization } from './FengShuiVisualization';
 import dynamic from 'next/dynamic';
-import { API_ENDPOINTS } from '@/lib/config';
+import { API_ENDPOINTS } from '@/utils/config';
 
 const ModelViewer3DWithTooltips = dynamic(() => import('./ModelViewer3DWithTooltips'), {
   ssr: false,

@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { API_ENDPOINTS } from '@/lib/config';
+import { API_ENDPOINTS } from '@/utils/config';
 
 const ModelViewer = dynamic(() => import('@/components/ModelViewer'), {
   ssr: false,

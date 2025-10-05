@@ -8,7 +8,7 @@ import { TopNav } from '@/components/TopNav';
 import { CircularProgress } from '@/components/CircularProgress';
 import HybridViewer from '@/components/HybridViewer';
 import Image from 'next/image';
-import { API_ENDPOINTS } from '@/lib/config';
+import { API_ENDPOINTS } from '@/utils/config';
 
 interface Tooltip {
   object_class: string;
