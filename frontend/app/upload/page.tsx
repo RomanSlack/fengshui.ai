@@ -154,6 +154,9 @@ export default function UploadPage() {
     setError(null);
     setResult(null);
 
+    // Track start time for minimum 5 second loading
+    const startTime = Date.now();
+
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
@@ -168,6 +171,14 @@ export default function UploadPage() {
       }
 
       const data = await response.json();
+
+      // Calculate remaining time to reach minimum 5 seconds
+      const elapsed = Date.now() - startTime;
+      const remainingTime = Math.max(0, 5000 - elapsed);
+
+      // Wait for remaining time before showing results
+      await new Promise(resolve => setTimeout(resolve, remainingTime));
+
       setResult(data);
 
       // Increment request count and deduct balance (only if paywall enabled)
@@ -360,8 +371,8 @@ export default function UploadPage() {
           </div>
         )}
 
-        {/* Step 3: Loading State - Elegant Animation */}
-        {loading && (
+        {/* Step 3: Loading State - Scanning Animation */}
+        {loading && preview && (
           <div className="transition-all duration-700 ease-out">
             <div className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-lg p-12 border border-gray-200">
               <div className="text-center space-y-8">
@@ -373,16 +384,59 @@ export default function UploadPage() {
                   Analyzing Your Space
                 </h2>
 
-                {/* Zen Loading Animation */}
+                {/* Scanning Animation with Image */}
                 <div className="flex flex-col items-center space-y-8 py-8">
-                  {/* Breathing Circle */}
-                  <div className="relative">
-                    <div className="w-32 h-32 rounded-full border-4 border-zen-sage/20 border-t-zen-sage animate-spin"></div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-20 h-20 rounded-full bg-zen-sage/10 animate-pulse"></div>
-                      {/* Breathing green dot */}
-                      <div className="absolute">
-                        <div className="w-4 h-4 rounded-full bg-zen-sage animate-pulse"></div>
+                  {/* Image with scanning grid overlay */}
+                  <div className="flex justify-center">
+                    <div className="relative rounded-2xl overflow-hidden shadow-2xl max-h-96 inline-block">
+                      <img
+                        src={preview}
+                        alt="Analyzing"
+                        className="max-h-96 w-auto object-contain"
+                      />
+
+                      {/* Wavy mesh grid overlay */}
+                      <div className="absolute inset-0 pointer-events-none">
+                        {/* Animated wavy grid mesh */}
+                        <svg className="absolute inset-0 w-full h-full">
+                          <defs>
+                            <pattern id="wavy-grid" width="50" height="50" patternUnits="userSpaceOnUse">
+                              {/* Horizontal lines */}
+                              <line x1="0" y1="0" x2="50" y2="0" stroke="#5c8a4a" strokeWidth="1" opacity="0.9" className="animate-wave-1" />
+                              <line x1="0" y1="25" x2="50" y2="25" stroke="#5c8a4a" strokeWidth="1" opacity="0.9" className="animate-wave-2" />
+                              <line x1="0" y1="50" x2="50" y2="50" stroke="#5c8a4a" strokeWidth="1" opacity="0.9" className="animate-wave-1" />
+                              {/* Vertical lines */}
+                              <line x1="0" y1="0" x2="0" y2="50" stroke="#5c8a4a" strokeWidth="1" opacity="0.9" className="animate-wave-2" />
+                              <line x1="25" y1="0" x2="25" y2="50" stroke="#5c8a4a" strokeWidth="1" opacity="0.9" className="animate-wave-1" />
+                              <line x1="50" y1="0" x2="50" y2="50" stroke="#5c8a4a" strokeWidth="1" opacity="0.9" className="animate-wave-2" />
+                            </pattern>
+
+                            {/* Filter for wavy distortion effect */}
+                            <filter id="wave-distortion">
+                              <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves="3" result="turbulence">
+                                <animate attributeName="baseFrequency" dur="8s" values="0.02;0.05;0.02" repeatCount="indefinite"/>
+                              </feTurbulence>
+                              <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="5" xChannelSelector="R" yChannelSelector="G"/>
+                            </filter>
+                          </defs>
+
+                          {/* Apply the wavy pattern with distortion */}
+                          <rect width="100%" height="100%" fill="url(#wavy-grid)" filter="url(#wave-distortion)"/>
+
+                          {/* Ripple effect circles */}
+                          <circle className="animate-ripple-1" cx="30%" cy="40%" r="20" fill="none" stroke="#5c8a4a" strokeWidth="2" opacity="0.7"/>
+                          <circle className="animate-ripple-2" cx="70%" cy="60%" r="20" fill="none" stroke="#5c8a4a" strokeWidth="2" opacity="0.7"/>
+                          <circle className="animate-ripple-3" cx="50%" cy="50%" r="20" fill="none" stroke="#5c8a4a" strokeWidth="2" opacity="0.7"/>
+                        </svg>
+
+                        {/* Corner brackets for scanning frame */}
+                        <div className="absolute top-4 left-4 w-12 h-12 border-t-3 border-l-3 border-zen-pine animate-pulse"></div>
+                        <div className="absolute top-4 right-4 w-12 h-12 border-t-3 border-r-3 border-zen-pine animate-pulse"></div>
+                        <div className="absolute bottom-4 left-4 w-12 h-12 border-b-3 border-l-3 border-zen-pine animate-pulse"></div>
+                        <div className="absolute bottom-4 right-4 w-12 h-12 border-b-3 border-r-3 border-zen-pine animate-pulse"></div>
+
+                        {/* Green tint overlay */}
+                        <div className="absolute inset-0 bg-zen-sage/10"></div>
                       </div>
                     </div>
                   </div>

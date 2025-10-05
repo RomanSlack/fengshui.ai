@@ -2,4 +2,113 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  /* Ripple animations - expanding circles (slower) */
+  @keyframes ripple-1 {
+    0% {
+      r: 20;
+      opacity: 0.6;
+    }
+    50% {
+      r: 80;
+      opacity: 0;
+    }
+    100% {
+      r: 20;
+      opacity: 0.6;
+    }
+  }
 
+  @keyframes ripple-2 {
+    0% {
+      r: 20;
+      opacity: 0.5;
+    }
+    50% {
+      r: 70;
+      opacity: 0;
+    }
+    100% {
+      r: 20;
+      opacity: 0.5;
+    }
+  }
+
+  @keyframes ripple-3 {
+    0% {
+      r: 20;
+      opacity: 0.4;
+    }
+    50% {
+      r: 90;
+      opacity: 0;
+    }
+    100% {
+      r: 20;
+      opacity: 0.4;
+    }
+  }
+
+  .animate-ripple-1 {
+    animation: ripple-1 5s ease-out infinite;
+  }
+
+  .animate-ripple-2 {
+    animation: ripple-2 6s ease-out infinite 1s;
+  }
+
+  .animate-ripple-3 {
+    animation: ripple-3 5.5s ease-out infinite 2s;
+  }
+
+  /* Wave animations for grid lines (slower) */
+  @keyframes wave-1 {
+    0%, 100% {
+      transform: translateY(0);
+      opacity: 0.6;
+    }
+    50% {
+      transform: translateY(2px);
+      opacity: 0.8;
+    }
+  }
+
+  @keyframes wave-2 {
+    0%, 100% {
+      transform: translateY(0);
+      opacity: 0.6;
+    }
+    50% {
+      transform: translateY(-2px);
+      opacity: 0.8;
+    }
+  }
+
+  .animate-wave-1 {
+    animation: wave-1 4s ease-in-out infinite;
+  }
+
+  .animate-wave-2 {
+    animation: wave-2 4s ease-in-out infinite 1s;
+  }
+
+  /* Heart pop animation - quick bounce, float up and drift right */
+  @keyframes heart-pop {
+    0% {
+      transform: translate(-50%, 0) scale(0.5);
+      opacity: 0;
+    }
+    50% {
+      transform: translate(20px, -30px) scale(1.2);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(60px, -80px) scale(1);
+      opacity: 0;
+    }
+  }
+
+  .animate-heart-pop {
+    animation: heart-pop 1s ease-out forwards;
+  }
+}

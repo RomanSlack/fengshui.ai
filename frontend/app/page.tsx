@@ -10,6 +10,7 @@ export default function Home() {
   const [showLoading, setShowLoading] = useState(false);
   const [mascotHovered, setMascotHovered] = useState(false);
   const [fadeIn, setFadeIn] = useState(false);
+  const [showHeart, setShowHeart] = useState(false);
 
   // Trigger fade-in on mount
   useEffect(() => {
@@ -29,6 +30,13 @@ export default function Home() {
       clearTimeout(loadingTimeout);
       router.push("/upload");
     }, 600); // Faster 600ms
+  };
+
+  const handleMascotClick = () => {
+    setShowHeart(true);
+    setTimeout(() => {
+      setShowHeart(false);
+    }, 1000); // Heart disappears after 1 second
   };
 
   if (showLoading) {
@@ -126,12 +134,41 @@ export default function Home() {
           <div className="w-px h-16 bg-gradient-to-b from-transparent via-zen-petal/50 to-transparent"></div>
         </div>
 
-        {/* Mascot peeking from bottom right */}
+        {/* Mascot peeking from bottom right with speech bubble */}
         <div
           className="fixed bottom-[-9px] right-48 cursor-pointer transition-transform duration-300 hover:scale-105"
           onMouseEnter={() => setMascotHovered(true)}
           onMouseLeave={() => setMascotHovered(false)}
+          onClick={handleMascotClick}
         >
+          {/* Speech bubble popup */}
+          <div
+            className={`absolute bottom-full right-8 mb-4 transition-all duration-500 ease-out ${
+              mascotHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+            }`}
+          >
+            <div className="relative bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-4 border border-zen-sage/20">
+              <p className="text-sm font-light text-zen-pine whitespace-nowrap">
+                To get started, click that big green button!
+              </p>
+              {/* Speech bubble tail */}
+              <div className="absolute bottom-[-8px] right-12 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-white/95"></div>
+            </div>
+          </div>
+
+          {/* Heart animation on click */}
+          {showHeart && (
+            <div className="absolute top-8 left-1/2 -translate-x-1/2 animate-heart-pop pointer-events-none">
+              <svg
+                className="w-8 h-8 text-red-500"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+            </div>
+          )}
+
           <Image
             src={mascotHovered ? "/mascot_peeking_eyes_closed_action.png" : "/mascot_peeking_1.png"}
             alt="Feng Shui Mascot"
