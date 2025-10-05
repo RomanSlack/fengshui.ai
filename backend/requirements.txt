@@ -6,3 +6,6 @@ ultralytics
 pillow
 numpy
 opencv-python
+requests
+flask
+werkzeug

@@ -212,3 +212,7 @@ backend/models/
 
 # Detection results
 backend/results/
+
+# 3D model renders
+backend/room_renders/*
+!backend/room_renders/.gitkeep

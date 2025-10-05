@@ -13,13 +13,17 @@
 import base64
 import os
 import logging
-from fastapi import FastAPI, UploadFile, File
+import asyncio
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, UploadFile, File, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 
 from object_detection import detect_room_objects
+from model_generation import generate_room_model
+from blender_service import start_blender_service, stop_blender_service, is_blender_service_running
 
 # Configure logging
 logging.basicConfig(
@@ -28,7 +32,28 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = FastAPI()
+
+# Lifespan context manager for startup/shutdown events
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Start Blender service
+    logger.info("Starting Blender 3D generation service...")
+    service_started = start_blender_service()
+
+    if service_started:
+        logger.info("✓ Blender service is ready")
+    else:
+        logger.warning("⚠ Blender service failed to start - 3D generation will be disabled")
+
+    yield
+
+    # Shutdown: Stop Blender service
+    logger.info("Shutting down Blender service...")
+    stop_blender_service()
+    logger.info("✓ Blender service stopped")
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 
@@ -89,8 +114,51 @@ def call_gemini_fengshui(image_data: bytes) -> str:
     return response.text
 
 
+async def generate_3d_model_background(image_data: bytes):
+    """Background task to generate 3D model without blocking the response."""
+    logger.info("3D model generation is currently disabled")
+    logger.info("TrueDepth plugin requires GUI mode for full functionality")
+    logger.info("To generate 3D models:")
+    logger.info("  1. Open Blender in GUI mode")
+    logger.info("  2. Use TrueDepth extension with saved images from backend/results/")
+    logger.info("  3. Export FBX files to backend/room_renders/")
+    return
+
+    # NOTE: Headless 3D generation disabled due to TrueDepth UI dependencies
+    # TrueDepth extension uses context.area.tag_redraw() which requires GUI mode
+    # Uncomment below to re-enable (may fail in headless mode)
+    """
+    try:
+        logger.info("Starting background 3D model generation...")
+
+        # Check if service is available
+        if not is_blender_service_running():
+            logger.warning("Blender service not running - skipping 3D generation")
+            return
+
+        # Run in executor to avoid blocking
+        loop = asyncio.get_event_loop()
+        fbx_path, message = await loop.run_in_executor(
+            None,
+            generate_room_model,
+            image_data,
+            'vits',  # Fast model
+            'gpu',   # Use GPU for faster processing
+            True     # Save results
+        )
+
+        if fbx_path:
+            logger.info(f"✓ 3D model generated: {fbx_path}")
+        else:
+            logger.warning(f"3D model generation failed: {message}")
+
+    except Exception as e:
+        logger.error(f"Background 3D generation error: {e}")
+    """
+
+
 @app.post("/analyze/")
-async def analyze_image(file: UploadFile = File(...)):
+async def analyze_image(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     image_data = await file.read()
 
     # Run object detection with automatic saving to results folder
@@ -114,6 +182,10 @@ async def analyze_image(file: UploadFile = File(...)):
 
     # Run Feng Shui analysis
     result = call_gemini_fengshui(image_data)
+
+    # Start 3D model generation in background (non-blocking)
+    background_tasks.add_task(generate_3d_model_background, image_data)
+    logger.info("3D model generation queued as background task")
 
     return {"result": result}
 
