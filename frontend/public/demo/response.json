@@ -1,0 +1,147 @@
+{
+  "score": 7,
+  "overall_analysis": "Your space demonstrates a harmonious blend of comfort and energy flow. The placement of furniture creates natural pathways, allowing chi to circulate freely throughout the room. The presence of natural elements like the vase adds a grounding energy. However, there are opportunities to enhance the balance between rest and active energy zones.",
+  "strengths": [
+    "Good furniture placement allowing natural energy flow",
+    "Balance between comfort and functionality",
+    "Natural elements present creating grounding energy",
+    "Adequate space for movement and circulation"
+  ],
+  "weaknesses": [
+    "Bed positioning may disrupt optimal rest energy",
+    "Limited natural light elements visible",
+    "Potential energy stagnation in certain corners",
+    "Missing water element for complete five-element balance"
+  ],
+  "suggestions": [
+    "Consider repositioning the bed to face the command position for better rest and security",
+    "Add a small water feature or mirror to enhance the water element and expand the space energetically",
+    "Introduce more plants or natural materials to strengthen the wood element",
+    "Ensure adequate lighting, especially in darker corners, to prevent chi stagnation",
+    "Use soft, rounded shapes in decor to promote gentle energy flow"
+  ],
+  "detected_objects": [
+    {
+      "class": "couch",
+      "confidence": 0.687,
+      "bbox": {
+        "x1": 0.32,
+        "y1": 618.74,
+        "x2": 318.81,
+        "y2": 884.22,
+        "width": 318.49,
+        "height": 265.48
+      },
+      "center": {
+        "x": 159.57,
+        "y": 751.48
+      }
+    },
+    {
+      "class": "bed",
+      "confidence": 0.415,
+      "bbox": {
+        "x1": 202.29,
+        "y1": 777.54,
+        "x2": 529.25,
+        "y2": 880.91,
+        "width": 326.96,
+        "height": 103.37
+      },
+      "center": {
+        "x": 365.77,
+        "y": 829.22
+      }
+    },
+    {
+      "class": "vase",
+      "confidence": 0.265,
+      "bbox": {
+        "x1": 294.27,
+        "y1": 621.54,
+        "x2": 318.83,
+        "y2": 661.52,
+        "width": 24.56,
+        "height": 39.98
+      },
+      "center": {
+        "x": 306.55,
+        "y": 641.53
+      }
+    }
+  ],
+  "tooltips": [
+    {
+      "object_class": "couch",
+      "object_index": 0,
+      "type": "good",
+      "message": "Excellent placement! Your couch creates a welcoming energy flow and provides a solid backing for those seated. This promotes feelings of security and comfort.",
+      "coordinates": {
+        "bbox": {
+          "x1": 0.32,
+          "y1": 618.74,
+          "x2": 318.81,
+          "y2": 884.22,
+          "width": 318.49,
+          "height": 265.48
+        },
+        "center": {
+          "x": 159.57,
+          "y": 751.48
+        }
+      },
+      "confidence": 0.687
+    },
+    {
+      "object_class": "bed",
+      "object_index": 1,
+      "type": "neutral",
+      "message": "The bed placement could be optimized. Consider positioning it in the command position - diagonally opposite the door with a clear view of the entrance - to enhance rest quality and personal power.",
+      "coordinates": {
+        "bbox": {
+          "x1": 202.29,
+          "y1": 777.54,
+          "x2": 529.25,
+          "y2": 880.91,
+          "width": 326.96,
+          "height": 103.37
+        },
+        "center": {
+          "x": 365.77,
+          "y": 829.22
+        }
+      },
+      "confidence": 0.415
+    },
+    {
+      "object_class": "vase",
+      "object_index": 2,
+      "type": "good",
+      "message": "Beautiful addition! This vase brings the wood element into your space, promoting growth and vitality. Consider filling it with fresh flowers or bamboo to enhance this positive energy.",
+      "coordinates": {
+        "bbox": {
+          "x1": 294.27,
+          "y1": 621.54,
+          "x2": 318.83,
+          "y2": 661.52,
+          "width": 24.56,
+          "height": 39.98
+        },
+        "center": {
+          "x": 306.55,
+          "y": 641.53
+        }
+      },
+      "confidence": 0.265
+    }
+  ],
+  "detection_metadata": {
+    "total_objects": 3,
+    "json_path": "/demo/detection.json",
+    "image_path": "/demo/room.jpg"
+  },
+  "model_3d": {
+    "model_id": "demo_model_static",
+    "status": "completed"
+  }
+}

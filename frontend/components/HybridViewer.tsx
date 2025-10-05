@@ -63,58 +63,23 @@ export default function HybridViewer({
     setFadeIn(true);
   }, []);
 
-  // Poll for model status
+  // Load static demo model (no polling needed)
   useEffect(() => {
     if (!modelId) {
       return;
     }
 
-    let interval: NodeJS.Timeout | null = null;
-    let isActive = true;
+    // Simulate a brief loading period for realistic UX
+    setModelStatus('processing');
 
-    const checkStatus = async () => {
-      try {
-        const response = await fetch(`http://localhost:8000/models/status/${modelId}`);
-
-        if (!response.ok) {
-          throw new Error('Failed to check model status');
-        }
-
-        const data = await response.json();
-
-        if (!isActive) return;
-
-        setModelStatus(data.status);
-
-        if (data.status === 'completed' && data.filename) {
-          const fileUrl = `http://localhost:8000/models/${data.filename}`;
-          setModelUrl(fileUrl);
-
-          if (interval) {
-            clearInterval(interval);
-            interval = null;
-          }
-        } else if (data.status === 'failed') {
-          setError(data.error || 'Model generation failed');
-
-          if (interval) {
-            clearInterval(interval);
-            interval = null;
-          }
-        }
-      } catch (err) {
-        console.error('Error checking model status:', err);
-      }
-    };
-
-    checkStatus();
-    interval = setInterval(checkStatus, 2000);
+    const loadTimer = setTimeout(() => {
+      // Use the static demo model
+      setModelUrl('/demo/model.fbx');
+      setModelStatus('completed');
+    }, 2000); // 2 second simulated processing
 
     return () => {
-      isActive = false;
-      if (interval) {
-        clearInterval(interval);
-      }
+      clearTimeout(loadTimer);
     };
   }, [modelId]);
 

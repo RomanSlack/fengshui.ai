@@ -1,9 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth0 } from '@auth0/auth0-react';
-import { useEcho, useEchoClient } from '@merit-systems/echo-react-sdk';
-import { Auth0Button } from '@/components/Auth0Button';
 import { TopNav } from '@/components/TopNav';
 import { CircularProgress } from '@/components/CircularProgress';
 import HybridViewer from '@/components/HybridViewer';
@@ -38,61 +35,25 @@ interface AnalysisResult {
 export default function UploadPage() {
   const [fadeIn, setFadeIn] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
-  const [authModalVisible, setAuthModalVisible] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [showMascotWelcome, setShowMascotWelcome] = useState(false);
+  const [showMascotWelcome, setShowMascotWelcome] = useState(true);
   const [mascotFadingOut, setMascotFadingOut] = useState(false);
-  const [showPaywall, setShowPaywall] = useState(false);
-  const [paywallFadingOut, setPaywallFadingOut] = useState(false);
-  const [showEchoSuccess, setShowEchoSuccess] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-
-  // Auth0 integration
-  const { isAuthenticated: isAuth0Authenticated, user: auth0User, error: auth0Error } = useAuth0();
-
-  // Echo integration for payments
-  const { isLoggedIn: isEchoAuthenticated, signIn: echoSignIn, balance: echoBalance, refreshBalance } = useEcho();
-  const echoClient = useEchoClient({
-    apiUrl: 'https://echo.merit.systems'
-  });
 
   // Trigger fade-in on mount
   useEffect(() => {
     setFadeIn(true);
-  }, []);
 
-  // Check on mount if user should see paywall or welcome mascot
-  useEffect(() => {
-    const usedFreeAnalysis = localStorage.getItem('fengshui_used_free_analysis') === 'true';
-
-    // Fallback: Check localStorage directly for Echo tokens (in case SDK hasn't initialized)
-    const echoTokenKey = Object.keys(localStorage).find(key =>
-      key.startsWith('oidc.user:https://echo.merit.systems')
-    );
-    const hasEchoTokens = !!echoTokenKey;
-
-    // Use hook state OR localStorage fallback
-    const echoIsConnected = isEchoAuthenticated || hasEchoTokens;
-
-    if (usedFreeAnalysis && !echoIsConnected) {
-      // User has used free analysis AND not Echo connected - show paywall
-      setShowPaywall(true);
-      setShowMascotWelcome(false);
-    } else if (!usedFreeAnalysis) {
-      // First time user - show welcome mascot
-      setShowMascotWelcome(true);
-      setShowPaywall(false);
-    } else {
-      // Used free analysis but Echo IS connected - don't show paywall
-      setShowPaywall(false);
-      setShowMascotWelcome(false);
+    // Pre-load speech synthesis voices (needed for some browsers)
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
     }
-  }, [isEchoAuthenticated]);
+  }, []);
 
   // Listen for navigation events to trigger fade-out
   useEffect(() => {
@@ -101,62 +62,23 @@ export default function UploadPage() {
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Clean up speech synthesis on unmount
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
   }, []);
 
-  // Handle auth modal fade-out when authenticated
-  useEffect(() => {
-    if (isAuth0Authenticated && authModalVisible) {
-      setTimeout(() => {
-        setAuthModalVisible(false);
-      }, 500);
-    }
-  }, [isAuth0Authenticated, authModalVisible]);
-
-  // Auto-dismiss paywall when Echo connects and show success message
-  useEffect(() => {
-    if (isEchoAuthenticated && showPaywall) {
-      // Fade out paywall
-      setPaywallFadingOut(true);
-      setTimeout(() => {
-        setShowPaywall(false);
-        setPaywallFadingOut(false);
-      }, 700);
-
-      // Show success toast
-      setShowEchoSuccess(true);
-      setTimeout(() => {
-        setShowEchoSuccess(false);
-      }, 4000);
-    }
-  }, [isEchoAuthenticated, showPaywall]);
-
-  // Show success message when Echo connects (even if no paywall showing)
-  useEffect(() => {
-    const wasNotAuthenticated = sessionStorage.getItem('echo_was_connecting');
-    if (isEchoAuthenticated && wasNotAuthenticated === 'true') {
-      sessionStorage.removeItem('echo_was_connecting');
-      setShowEchoSuccess(true);
-      setTimeout(() => {
-        setShowEchoSuccess(false);
-      }, 4000);
-    }
-  }, [isEchoAuthenticated]);
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      setError(null);
-      setResult(null);
+    // Demo mode: Always use the demo image
+    setSelectedFile(new File([], "demo-room.jpg"));
+    setError(null);
+    setResult(null);
 
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+    // Use the static demo image
+    setPreview("/demo/room.jpg");
   };
 
   const handleUpload = async () => {
@@ -165,45 +87,19 @@ export default function UploadPage() {
       return;
     }
 
-    // Check if user needs to connect Echo (used free analysis and not connected)
-    const usedFreeAnalysis = localStorage.getItem('fengshui_used_free_analysis') === 'true';
-
-    // Fallback: Check localStorage for Echo tokens
-    const echoTokenKey = Object.keys(localStorage).find(key =>
-      key.startsWith('oidc.user:https://echo.merit.systems')
-    );
-    const hasEchoTokens = !!echoTokenKey;
-    const echoIsConnected = isEchoAuthenticated || hasEchoTokens;
-
-    if (usedFreeAnalysis && !echoIsConnected) {
-      setError("Please connect Echo to continue analyzing");
-      return;
-    }
-
-    // Check if Echo user has sufficient balance (need at least $1 USD)
-    if (echoIsConnected && echoBalance?.balance !== undefined && echoBalance.balance < 1) {
-      setError("Insufficient balance. Please add credits to continue!");
-      return;
-    }
-
     setLoading(true);
     setError(null);
     setResult(null);
 
-    // Track start time for minimum 5 second loading
+    // Track start time for minimum 5 second loading (realistic UX)
     const startTime = Date.now();
 
     try {
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-
-      const response = await fetch("http://localhost:8000/analyze/", {
-        method: "POST",
-        body: formData,
-      });
+      // Load the static demo response
+      const response = await fetch("/demo/response.json");
 
       if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
+        throw new Error(`Failed to load demo data: ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -212,20 +108,10 @@ export default function UploadPage() {
       const elapsed = Date.now() - startTime;
       const remainingTime = Math.max(0, 5000 - elapsed);
 
-      // Wait for remaining time before showing results
+      // Wait for remaining time before showing results (simulate processing)
       await new Promise(resolve => setTimeout(resolve, remainingTime));
 
       setResult(data);
-
-      // Mark free analysis as used (if not Echo authenticated)
-      if (!echoIsConnected) {
-        localStorage.setItem('fengshui_used_free_analysis', 'true');
-      }
-
-      // Refresh balance after analysis (Echo tracks usage automatically)
-      if (echoIsConnected && refreshBalance) {
-        await refreshBalance();
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to analyze image");
     } finally {
@@ -234,38 +120,12 @@ export default function UploadPage() {
   };
 
   const handleReset = () => {
-    // Check if user has used free analysis and not connected to Echo
-    const usedFreeAnalysis = localStorage.getItem('fengshui_used_free_analysis') === 'true';
-
-    // Fallback: Check localStorage for Echo tokens
-    const echoTokenKey = Object.keys(localStorage).find(key =>
-      key.startsWith('oidc.user:https://echo.merit.systems')
-    );
-    const hasEchoTokens = !!echoTokenKey;
-    const echoIsConnected = isEchoAuthenticated || hasEchoTokens;
-
-    if (usedFreeAnalysis && !echoIsConnected) {
-      // Show paywall screen
-      setShowPaywall(true);
-      setSelectedFile(null);
-      setPreview(null);
-      setResult(null);
-      setError(null);
-    } else {
-      // Normal reset - go back to upload
-      setSelectedFile(null);
-      setPreview(null);
-      setResult(null);
-      setError(null);
-    }
-  };
-
-  const handleConnectEcho = () => {
-    if (echoSignIn) {
-      // Mark that we're starting Echo auth flow
-      sessionStorage.setItem('echo_was_connecting', 'true');
-      echoSignIn();
-    }
+    // Reset to initial state
+    setSelectedFile(null);
+    setPreview(null);
+    setResult(null);
+    setError(null);
+    setShowMascotWelcome(true);
   };
 
   const handleContinueFromMascot = () => {
@@ -295,13 +155,9 @@ export default function UploadPage() {
   const handlePlayAudio = async () => {
     if (!result?.overall_analysis) return;
 
-    // If already playing, stop the audio
-    if (isPlayingAudio && audioUrl) {
-      const audioElement = document.querySelector('audio') as HTMLAudioElement;
-      if (audioElement) {
-        audioElement.pause();
-        audioElement.currentTime = 0;
-      }
+    // If already playing, stop the speech
+    if (isPlayingAudio) {
+      window.speechSynthesis.cancel();
       setIsPlayingAudio(false);
       return;
     }
@@ -309,32 +165,35 @@ export default function UploadPage() {
     try {
       setIsPlayingAudio(true);
 
-      const response = await fetch("http://localhost:8000/tts/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ text: result.overall_analysis }),
-      });
+      // Use Web Speech API for client-side TTS
+      const utterance = new SpeechSynthesisUtterance(result.overall_analysis);
 
-      if (!response.ok) {
-        throw new Error(`TTS generation failed: ${response.statusText}`);
+      // Configure voice settings for a calm, meditative tone
+      utterance.rate = 0.9; // Slightly slower for zen effect
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+
+      // Find a suitable voice (prefer female voices for calm tone)
+      const voices = window.speechSynthesis.getVoices();
+      const preferredVoice = voices.find(voice =>
+        voice.name.includes('Samantha') ||
+        voice.name.includes('Female') ||
+        voice.lang.startsWith('en')
+      );
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
       }
 
-      const audioBlob = await response.blob();
-      const url = URL.createObjectURL(audioBlob);
-      setAudioUrl(url);
-
-      // Create and play audio
-      const audio = new Audio(url);
-      audio.onended = () => {
+      utterance.onend = () => {
         setIsPlayingAudio(false);
       };
-      audio.onerror = () => {
+
+      utterance.onerror = () => {
         setIsPlayingAudio(false);
         setError("Failed to play audio");
       };
-      audio.play();
+
+      window.speechSynthesis.speak(utterance);
     } catch (err) {
       setIsPlayingAudio(false);
       setError(err instanceof Error ? err.message : "Failed to generate audio");
@@ -343,35 +202,6 @@ export default function UploadPage() {
 
   return (
     <main className={`min-h-screen bg-gradient-to-b from-zen-cloud to-alabaster transition-opacity duration-1000 ${isNavigating ? 'opacity-0' : fadeIn ? 'opacity-100' : 'opacity-0'}`}>
-      {/* Mandatory Auth Modal - Only show if not authenticated */}
-      {!isAuth0Authenticated && authModalVisible && (
-        <div className={`fixed inset-0 bg-white z-50 flex items-center justify-center transition-opacity duration-1000 ${isAuth0Authenticated ? 'opacity-0' : 'opacity-100'}`}>
-          <div className="max-w-md w-full mx-4">
-            <div className="bg-white rounded-3xl shadow-2xl p-12 text-center border border-gray-100">
-              <div className="mb-8">
-                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-zen-sage to-zen-pine rounded-full flex items-center justify-center">
-                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-              </div>
-
-              <h2 className="text-3xl font-serif font-light text-zen-pine mb-3 tracking-calm">
-                Welcome
-              </h2>
-
-              <p className="text-gray-600 font-light mb-8 leading-relaxed">
-                Please sign in to begin your feng shui journey
-              </p>
-
-              <div className="flex justify-center">
-                <Auth0Button />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Top Navigation */}
       <TopNav onNavigate={() => setIsNavigating(true)} />
 
@@ -383,57 +213,21 @@ export default function UploadPage() {
           <h1 className="text-5xl font-serif font-light text-zen-pine tracking-calm">
             Feng Shui Analysis
           </h1>
-          {!showMascotWelcome && !showPaywall && (
+          {!showMascotWelcome && (
             <p className="text-lg text-zen-earth font-light leading-relaxed max-w-2xl mx-auto">
               Upload a photo of your room to receive personalized feng shui insights and harmonize your space
             </p>
           )}
         </div>
 
-        {/* Paywall Screen - After first free analysis */}
-        {showPaywall && !preview && !loading && !result && (
-          <div className={`flex flex-col items-center space-y-8 transition-opacity duration-700 ease-out ${paywallFadingOut ? 'opacity-0' : 'opacity-100'}`}>
-            {/* Speech Bubble */}
-            <div className="relative max-w-xl mb-4">
-              <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 border border-zen-sage/20">
-                <p className="text-lg font-light text-zen-pine text-center leading-relaxed">
-                  You&apos;ve used your 1 free analysis! Connect Echo to analyze as many spaces as you like and unlock unlimited feng shui insights.
-                </p>
-                {/* Speech bubble tail pointing down to mascot */}
-                <div className="absolute bottom-[-8px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-white/95"></div>
-              </div>
-            </div>
-
-            {/* Mascot Image - Pondering */}
-            <div className="relative">
-              <Image
-                src="/mascot_pondering.png"
-                alt="Feng Shui Mascot"
-                width={280}
-                height={280}
-                className="object-contain"
-                priority
-              />
-            </div>
-
-            {/* Connect Echo Button */}
-            <button
-              onClick={handleConnectEcho}
-              className="px-16 py-4 text-lg rounded-full bg-gradient-to-br from-zen-sage to-zen-pine hover:shadow-3xl text-white transition-all duration-500 ease-out shadow-2xl hover:scale-105 font-light tracking-calm mt-4"
-            >
-              Connect Echo
-            </button>
-          </div>
-        )}
-
         {/* Step 0: Mascot Welcome - Initial greeting */}
-        {showMascotWelcome && !preview && !loading && !result && !showPaywall && (
+        {showMascotWelcome && !preview && !loading && !result && (
           <div className={`flex flex-col items-center space-y-8 transition-opacity duration-700 ease-out ${mascotFadingOut ? 'opacity-0' : 'opacity-100'}`}>
             {/* Speech Bubble */}
             <div className="relative max-w-xl mb-4">
               <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 border border-zen-sage/20">
                 <p className="text-lg font-light text-zen-pine text-center leading-relaxed">
-                  Are you ready to improve your space? Just upload a single image of your room and wait for the magic to happen!
+                  Welcome to the FengShui.fy demo! Click below to experience a sample feng shui analysis with interactive tooltips and a 3D room model. This is a demonstration of our full system using pre-loaded data.
                 </p>
                 {/* Speech bubble tail pointing up to mascot */}
                 <div className="absolute top-[-8px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[8px] border-b-white/95"></div>
@@ -457,13 +251,13 @@ export default function UploadPage() {
               onClick={handleContinueFromMascot}
               className="px-16 py-4 text-lg rounded-full bg-zen-sage/90 hover:bg-zen-sage text-white transition-all duration-500 ease-out shadow-2xl hover:shadow-3xl hover:scale-105 font-light tracking-calm mt-4"
             >
-              Continue
+              Try Demo
             </button>
           </div>
         )}
 
         {/* Step 1: Upload Section - Only show when no file selected */}
-        {!showMascotWelcome && !showPaywall && !preview && !loading && !result && (
+        {!showMascotWelcome && !preview && !loading && !result && (
           <div className="transition-all duration-700 ease-out">
             <div className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-lg p-12 border border-gray-200">
               <div className="text-center mb-8">
@@ -496,10 +290,10 @@ export default function UploadPage() {
                     </svg>
                   </div>
                   <p className="text-xl text-zen-pine font-light mb-2">
-                    Click to upload or drag and drop
+                    Click to load demo room
                   </p>
                   <p className="text-sm text-zen-earth/70 font-light">
-                    PNG, JPG, or JPEG (Max 10MB)
+                    Demo: Pre-selected sample room image
                   </p>
                 </div>
                 <input
@@ -743,6 +537,8 @@ export default function UploadPage() {
                 imageUrl={preview}
                 tooltips={result.tooltips}
                 modelId={result.model_3d?.model_id || null}
+                imageWidth={1024}
+                imageHeight={1024}
               />
             )}
 
@@ -823,23 +619,6 @@ export default function UploadPage() {
           </div>
         )}
       </div>
-
-      {/* Echo Success Toast */}
-      {showEchoSuccess && (
-        <div className="fixed top-8 right-8 z-50 animate-in slide-in-from-top-4 fade-in duration-500">
-          <div className="bg-gradient-to-br from-zen-sage to-zen-pine text-white rounded-2xl shadow-2xl p-6 flex items-center gap-4 max-w-md">
-            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <div>
-              <p className="font-medium text-lg">Echo Connected!</p>
-              <p className="text-sm text-white/90 font-light">You now have unlimited analyses. Balance: {echoBalance?.balance !== undefined ? `$${echoBalance.balance.toFixed(2)}` : '...'}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Organic background shapes */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
