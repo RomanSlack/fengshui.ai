@@ -36,6 +36,8 @@ interface AnalysisResult {
 }
 
 export default function UploadPage() {
+  const [fadeIn, setFadeIn] = useState(false);
+  const [authModalVisible, setAuthModalVisible] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -44,6 +46,20 @@ export default function UploadPage() {
 
   // Auth0 integration
   const { isAuthenticated: isAuth0Authenticated, user: auth0User } = useAuth0();
+
+  // Trigger fade-in on mount
+  useEffect(() => {
+    setFadeIn(true);
+  }, []);
+
+  // Handle auth modal fade-out when authenticated
+  useEffect(() => {
+    if (isAuth0Authenticated && authModalVisible) {
+      setTimeout(() => {
+        setAuthModalVisible(false);
+      }, 500); // Small delay before fade-out
+    }
+  }, [isAuth0Authenticated, authModalVisible]);
 
   // Echo integration for payments
   const { isAuthenticated: isEchoAuthenticated } = useEcho();
@@ -189,7 +205,40 @@ export default function UploadPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+    <main className={`min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 transition-opacity duration-1000 ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
+      {/* Mandatory Auth Modal */}
+      {!isAuth0Authenticated && authModalVisible && (
+        <div className={`fixed inset-0 bg-white z-50 flex items-center justify-center transition-opacity duration-1000 ${isAuth0Authenticated ? 'opacity-0' : 'opacity-100'}`}>
+          <div className="max-w-md w-full mx-4">
+            <div className="bg-white rounded-3xl shadow-2xl p-12 text-center border border-gray-100">
+              {/* Logo or Icon */}
+              <div className="mb-8">
+                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-zen-sage to-zen-pine rounded-full flex items-center justify-center">
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Title */}
+              <h2 className="text-3xl font-serif font-light text-zen-pine mb-3 tracking-calm">
+                Welcome
+              </h2>
+
+              {/* Description */}
+              <p className="text-gray-600 font-light mb-8 leading-relaxed">
+                Please sign in to begin your feng shui journey
+              </p>
+
+              {/* Auth Button */}
+              <div className="flex justify-center">
+                <Auth0Button />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="container mx-auto px-4 py-8">
         {/* Header with Auth */}
         <div className="max-w-7xl mx-auto mb-8">
