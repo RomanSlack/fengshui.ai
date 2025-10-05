@@ -188,44 +188,73 @@ export function FengShuiVisualization({
                 </g>
 
                 {/* Tooltip Card - Positioned near object */}
-                {isActive && (
-                  <foreignObject
-                    x={Math.max(10, Math.min(bbox.x1, imageDimensions.width - 380))}
-                    y={Math.max(10, bbox.y2 + 10)}
-                    width="360"
-                    height="180"
-                    className="pointer-events-auto"
-                  >
-                    <div
-                      className={`p-5 rounded-xl shadow-2xl border-3 ${colors.cardBorder} ${colors.cardBg} ${colors.cardText} backdrop-blur-sm`}
-                      onMouseEnter={() => setClickedTooltip(index)}
-                      onMouseLeave={() => setClickedTooltip(null)}
+                {isActive && (() => {
+                  // Smart positioning: try below first, then above if cut off, then closer to icon
+                  const tooltipWidth = 400;
+                  const tooltipMaxHeight = 300;
+                  const padding = 15;
+
+                  // Calculate if tooltip fits below the bbox
+                  const fitsBelow = bbox.y2 + tooltipMaxHeight + padding < imageDimensions.height;
+                  const fitsAbove = bbox.y1 - tooltipMaxHeight - padding > 0;
+
+                  // Position Y: prefer below, then above, then next to icon
+                  let yPos;
+                  if (fitsBelow) {
+                    yPos = bbox.y2 + padding;
+                  } else if (fitsAbove) {
+                    yPos = bbox.y1 - tooltipMaxHeight - padding;
+                  } else {
+                    // Place near icon center if neither fits
+                    yPos = Math.max(padding, Math.min(center.y - 50, imageDimensions.height - tooltipMaxHeight - padding));
+                  }
+
+                  // Position X: center on object, but keep within bounds
+                  const xPos = Math.max(padding, Math.min(center.x - tooltipWidth / 2, imageDimensions.width - tooltipWidth - padding));
+
+                  return (
+                    <foreignObject
+                      x={xPos}
+                      y={yPos}
+                      width={tooltipWidth}
+                      height={tooltipMaxHeight}
+                      className="pointer-events-auto"
                     >
-                      <div className="flex items-start gap-3">
-                        <div className={`flex-shrink-0 w-10 h-10 ${colors.iconBg} text-white rounded-full flex items-center justify-center font-bold text-lg`}>
-                          {colors.icon}
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-bold text-lg capitalize mb-2">
-                            {tooltip.object_class}
+                      <div
+                        className={`max-h-full overflow-y-auto p-6 rounded-xl shadow-2xl border-3 ${colors.cardBorder} ${colors.cardBg} ${colors.cardText} backdrop-blur-sm scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent`}
+                        onMouseEnter={() => setClickedTooltip(index)}
+                        onMouseLeave={() => setClickedTooltip(null)}
+                        style={{
+                          scrollbarWidth: 'thin',
+                          scrollbarColor: '#9ca3af transparent'
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`flex-shrink-0 w-11 h-11 ${colors.iconBg} text-white rounded-full flex items-center justify-center font-bold text-xl`}>
+                            {colors.icon}
                           </div>
-                          <div className="text-base leading-relaxed">
-                            {tooltip.message}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-bold text-xl capitalize mb-2">
+                              {tooltip.object_class}
+                            </div>
+                            <div className="text-lg leading-relaxed">
+                              {tooltip.message}
+                            </div>
                           </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setClickedTooltip(null);
+                            }}
+                            className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors text-xl"
+                          >
+                            ✕
+                          </button>
                         </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setClickedTooltip(null);
-                          }}
-                          className="text-gray-400 hover:text-gray-600 transition-colors text-lg"
-                        >
-                          ✕
-                        </button>
                       </div>
-                    </div>
-                  </foreignObject>
-                )}
+                    </foreignObject>
+                  );
+                })()}
               </g>
             );
           })}
