@@ -3,7 +3,7 @@
 import { useEcho } from '@merit-systems/echo-react-sdk';
 
 export function EchoSignIn() {
-  const { isAuthenticated, user, signIn, signOut, isLoading } = useEcho();
+  const { isLoggedIn, user, signIn, signOut, isLoading } = useEcho();
 
   if (isLoading) {
     return (
@@ -11,7 +11,7 @@ export function EchoSignIn() {
     );
   }
 
-  if (isAuthenticated && user) {
+  if (isLoggedIn && user) {
     return (
       <button
         onClick={() => signOut()}

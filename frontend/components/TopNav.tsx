@@ -14,7 +14,7 @@ export function TopNav({ onNavigate }: TopNavProps = {}) {
   const router = useRouter();
   const { user, isAuthenticated, logout, error } = useAuth0();
   const {
-    isAuthenticated: isEchoAuthenticated,
+    isLoggedIn: isEchoAuthenticated,
     balance: echoBalance,
     signIn: echoSignIn,
     createPaymentLink

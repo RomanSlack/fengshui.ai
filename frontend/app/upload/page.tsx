@@ -55,7 +55,7 @@ export default function UploadPage() {
   const { isAuthenticated: isAuth0Authenticated, user: auth0User, error: auth0Error } = useAuth0();
 
   // Echo integration for payments
-  const { isAuthenticated: isEchoAuthenticated, signIn: echoSignIn, balance: echoBalance } = useEcho();
+  const { isLoggedIn: isEchoAuthenticated, signIn: echoSignIn, balance: echoBalance, refreshBalance } = useEcho();
   const echoClient = useEchoClient({
     apiUrl: 'https://echo.merit.systems'
   });
@@ -221,10 +221,9 @@ export default function UploadPage() {
         localStorage.setItem('fengshui_used_free_analysis', 'true');
       }
 
-      // Deduct balance if Echo user (1 USD per analysis)
-      if (echoIsConnected && echoClient && echoClient.balance) {
-        await echoClient.balance.deduct({ amount: 1 });
-        // Balance will auto-refresh from useEcho() hook
+      // Refresh balance after analysis (Echo tracks usage automatically)
+      if (echoIsConnected && refreshBalance) {
+        await refreshBalance();
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to analyze image");

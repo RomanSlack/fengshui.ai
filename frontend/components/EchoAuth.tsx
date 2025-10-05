@@ -3,7 +3,7 @@
 import { useEcho } from '@merit-systems/echo-react-sdk';
 
 export function EchoAuth() {
-  const { user, isAuthenticated, isLoading, signIn, signOut } = useEcho();
+  const { user, isLoggedIn, isLoading, signIn, signOut } = useEcho();
 
   if (isLoading) {
     return (
@@ -14,7 +14,7 @@ export function EchoAuth() {
     );
   }
 
-  if (isAuthenticated && user) {
+  if (isLoggedIn && user) {
     return (
       <div className="flex items-center gap-4">
         <div className="text-sm text-gray-700">
