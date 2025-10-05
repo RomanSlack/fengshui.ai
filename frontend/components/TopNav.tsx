@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { useEcho, useEchoClient } from "@merit-systems/echo-react-sdk";
+import { useEcho } from "@merit-systems/echo-react-sdk";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
@@ -13,9 +13,12 @@ interface TopNavProps {
 export function TopNav({ onNavigate }: TopNavProps = {}) {
   const router = useRouter();
   const { user, isAuthenticated, logout, error } = useAuth0();
-  const { isAuthenticated: isEchoAuthenticated } = useEcho();
-  const echoClient = useEchoClient({ apiUrl: "https://echo.merit.systems" });
-  const [balance, setBalance] = useState<number | null>(null);
+  const {
+    isAuthenticated: isEchoAuthenticated,
+    balance: echoBalance,
+    signIn: echoSignIn,
+    createPaymentLink
+  } = useEcho();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -30,20 +33,6 @@ export function TopNav({ onNavigate }: TopNavProps = {}) {
     const hasEchoTokens = !!echoTokenKey;
     setEchoIsConnected(isEchoAuthenticated || hasEchoTokens);
   }, [isEchoAuthenticated]);
-
-  // Get Echo balance (only when SDK is fully initialized)
-  useEffect(() => {
-    // Only fetch balance when the Echo SDK hook confirms authentication
-    // (not just when localStorage tokens exist)
-    if (isEchoAuthenticated && echoClient && echoClient.balance) {
-      echoClient.balance
-        .get()
-        .then((bal) => setBalance(bal.balance))
-        .catch((err) => {
-          console.error('Failed to fetch Echo balance:', err);
-        });
-    }
-  }, [isEchoAuthenticated, echoClient]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -60,15 +49,20 @@ export function TopNav({ onNavigate }: TopNavProps = {}) {
   }, [showDropdown]);
 
   const handleAddCredits = async () => {
-    if (!echoClient) return;
+    if (!createPaymentLink) {
+      console.error('Echo payment link creator not available');
+      return;
+    }
+
     try {
-      const paymentLink = await echoClient.balance.createPaymentLink({
-        amount: 5000,
-        returnUrl: window.location.href,
-      });
-      window.location.href = paymentLink.url;
+      // Create payment link for $1 (minimum amount, amounts are in USD)
+      const successUrl = `${window.location.origin}/upload`;
+      const paymentUrl = await createPaymentLink(1, 'FengShui.fy Credits', successUrl);
+
+      // Redirect to payment page
+      window.location.href = paymentUrl;
     } catch (err) {
-      console.error("Failed to create payment link");
+      console.error("Failed to create payment link:", err);
     }
   };
 
@@ -120,7 +114,7 @@ export function TopNav({ onNavigate }: TopNavProps = {}) {
                 <div className="text-right hidden sm:block">
                   <p className="text-xs font-light text-gray-500">Balance</p>
                   <p className="text-sm font-medium text-zen-pine">
-                    {balance !== null ? `${Math.floor(balance / 100)} credits` : "..."}
+                    {echoBalance?.balance !== undefined ? `${Math.floor(echoBalance.balance / 100)} credits` : "..."}
                   </p>
                 </div>
                 <button
@@ -134,7 +128,9 @@ export function TopNav({ onNavigate }: TopNavProps = {}) {
               <button
                 onClick={() => {
                   sessionStorage.setItem('echo_was_connecting', 'true');
-                  echoClient?.connect();
+                  if (echoSignIn) {
+                    echoSignIn();
+                  }
                 }}
                 className="px-4 py-2 text-sm font-light border border-zen-sage/30 text-zen-pine rounded-full hover:bg-zen-sage/10 transition-all duration-300"
               >

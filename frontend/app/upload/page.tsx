@@ -55,11 +55,10 @@ export default function UploadPage() {
   const { isAuthenticated: isAuth0Authenticated, user: auth0User, error: auth0Error } = useAuth0();
 
   // Echo integration for payments
-  const { isAuthenticated: isEchoAuthenticated, signIn: echoSignIn } = useEcho();
+  const { isAuthenticated: isEchoAuthenticated, signIn: echoSignIn, balance: echoBalance } = useEcho();
   const echoClient = useEchoClient({
     apiUrl: 'https://echo.merit.systems'
   });
-  const [balance, setBalance] = useState<number | null>(null);
 
   // Trigger fade-in on mount
   useEffect(() => {
@@ -75,13 +74,6 @@ export default function UploadPage() {
       key.startsWith('oidc.user:https://echo.merit.systems')
     );
     const hasEchoTokens = !!echoTokenKey;
-
-    console.log('Paywall check:', {
-      usedFreeAnalysis,
-      isEchoAuthenticated,
-      hasEchoTokens,
-      echoTokenKey
-    });
 
     // Use hook state OR localStorage fallback
     const echoIsConnected = isEchoAuthenticated || hasEchoTokens;
@@ -119,15 +111,6 @@ export default function UploadPage() {
       }, 500);
     }
   }, [isAuth0Authenticated, authModalVisible]);
-
-  // Check balance if authenticated
-  useEffect(() => {
-    if (isEchoAuthenticated && echoClient) {
-      echoClient.balance.get().then((bal) => {
-        setBalance(bal.balance);
-      }).catch(console.error);
-    }
-  }, [isEchoAuthenticated, echoClient]);
 
   // Auto-dismiss paywall when Echo connects and show success message
   useEffect(() => {
@@ -196,8 +179,8 @@ export default function UploadPage() {
       return;
     }
 
-    // Check if Echo user has sufficient balance
-    if (echoIsConnected && balance !== null && balance < 100) {
+    // Check if Echo user has sufficient balance (need at least $1 USD)
+    if (echoIsConnected && echoBalance?.balance !== undefined && echoBalance.balance < 1) {
       setError("Insufficient balance. Please add credits to continue!");
       return;
     }
@@ -238,11 +221,10 @@ export default function UploadPage() {
         localStorage.setItem('fengshui_used_free_analysis', 'true');
       }
 
-      // Deduct balance if Echo user
-      if (echoIsConnected && echoClient) {
-        await echoClient.balance.deduct({ amount: 100 });
-        const bal = await echoClient.balance.get();
-        setBalance(bal.balance);
+      // Deduct balance if Echo user (1 USD per analysis)
+      if (echoIsConnected && echoClient && echoClient.balance) {
+        await echoClient.balance.deduct({ amount: 1 });
+        // Balance will auto-refresh from useEcho() hook
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to analyze image");
@@ -784,7 +766,7 @@ export default function UploadPage() {
             </div>
             <div>
               <p className="font-medium text-lg">Echo Connected!</p>
-              <p className="text-sm text-white/90 font-light">You now have unlimited analyses. Balance: {balance !== null ? `${Math.floor(balance / 100)} credits` : '...'}</p>
+              <p className="text-sm text-white/90 font-light">You now have unlimited analyses. Balance: {echoBalance?.balance !== undefined ? `${Math.floor(echoBalance.balance / 100)} credits` : '...'}</p>
             </div>
           </div>
         </div>
