@@ -228,7 +228,7 @@ export default function HybridViewer({
       {viewMode === '2D' && modelId && !is3DAvailable && modelStatus !== 'failed' && (
         <div className="mt-6 bg-blue-50/80 backdrop-blur-sm border border-blue-200 rounded-xl p-4">
           <p className="text-sm text-blue-800 font-light">
-            💡 <strong className="font-medium">Tip:</strong> Your 3D model is being generated in the background. Switch to 3D view once it's ready to explore your room in three dimensions!
+            💡 <strong className="font-medium">Tip:</strong> Your 3D model is being generated in the background. Switch to 3D view once it&apos;s ready to explore your room in three dimensions!
           </p>
         </div>
       )}

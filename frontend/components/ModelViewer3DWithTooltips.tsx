@@ -54,31 +54,24 @@ function FBXModelWithMarkers({
   imageHeight: number;
   onMarkersReady: (markers: TooltipMarker[]) => void;
 }) {
-  let fbx;
-  try {
-    fbx = useLoader(FBXLoader, url, (loader) => {
-      const manager = new THREE.LoadingManager();
+  const fbx = useLoader(FBXLoader, url, (loader) => {
+    const manager = new THREE.LoadingManager();
 
-      // Configure error handling
-      manager.onError = (url) => {
-        console.error('Error loading asset:', url);
-      };
+    // Configure error handling
+    manager.onError = (errorUrl) => {
+      console.error('Error loading asset:', errorUrl);
+    };
 
-      manager.setURLModifier((textureUrl) => {
-        if (textureUrl.startsWith('/') || textureUrl.includes(':\\')) {
-          console.warn('External texture path detected, using default material:', textureUrl);
-          return '';
-        }
-        return textureUrl;
-      });
-
-      loader.manager = manager;
+    manager.setURLModifier((textureUrl) => {
+      if (textureUrl.startsWith('/') || textureUrl.includes(':\\')) {
+        console.warn('External texture path detected, using default material:', textureUrl);
+        return '';
+      }
+      return textureUrl;
     });
-  } catch (error) {
-    console.error('FBX loading error:', error);
-    // Return a placeholder mesh on error
-    return null;
-  }
+
+    loader.manager = manager;
+  });
 
   const { camera } = useThree();
   const meshRef = useRef<THREE.Group>(null);

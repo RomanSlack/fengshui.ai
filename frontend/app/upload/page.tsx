@@ -35,7 +35,6 @@ interface AnalysisResult {
 export default function UploadPage() {
   const [fadeIn, setFadeIn] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -71,22 +70,7 @@ export default function UploadPage() {
     };
   }, []);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Demo mode: Always use the demo image
-    setSelectedFile(new File([], "demo-room.jpg"));
-    setError(null);
-    setResult(null);
-
-    // Use the static demo image
-    setPreview("/demo/room.jpg");
-  };
-
   const handleUpload = async () => {
-    if (!selectedFile) {
-      setError("Please select an image first");
-      return;
-    }
-
     setLoading(true);
     setError(null);
     setResult(null);
@@ -120,18 +104,16 @@ export default function UploadPage() {
   };
 
   const handleReset = () => {
-    // Reset to initial state
-    setSelectedFile(null);
-    setPreview(null);
-    setResult(null);
-    setError(null);
-    setShowMascotWelcome(true);
+    // Refresh the page to restart demo
+    window.location.reload();
   };
 
   const handleContinueFromMascot = () => {
     setMascotFadingOut(true);
     setTimeout(() => {
       setShowMascotWelcome(false);
+      // Automatically load demo image
+      setPreview("/demo/room.jpg");
     }, 700); // Wait for fade-out animation to complete
   };
 
@@ -256,63 +238,6 @@ export default function UploadPage() {
           </div>
         )}
 
-        {/* Step 1: Upload Section - Only show when no file selected */}
-        {!showMascotWelcome && !preview && !loading && !result && (
-          <div className="transition-all duration-700 ease-out">
-            <div className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-lg p-12 border border-gray-200">
-              <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-zen-sage to-zen-pine mb-4">
-                  <span className="text-white text-2xl font-light">1</span>
-                </div>
-                <h2 className="text-2xl font-serif font-light text-zen-pine tracking-calm">
-                  Choose Your Space
-                </h2>
-              </div>
-
-              <label
-                htmlFor="file-upload"
-                className="block cursor-pointer group"
-              >
-                <div className="relative h-80 border-2 border-dashed border-zen-sage/40 rounded-2xl hover:border-zen-sage hover:bg-zen-sage/5 transition-all duration-500 flex flex-col items-center justify-center">
-                  <div className="w-20 h-20 mb-6 rounded-full bg-zen-sage/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
-                    <svg
-                      className="w-10 h-10 text-zen-sage"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                      />
-                    </svg>
-                  </div>
-                  <p className="text-xl text-zen-pine font-light mb-2">
-                    Click to load demo room
-                  </p>
-                  <p className="text-sm text-zen-earth/70 font-light">
-                    Demo: Pre-selected sample room image
-                  </p>
-                </div>
-                <input
-                  id="file-upload"
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleFileSelect}
-                />
-              </label>
-
-              {error && (
-                <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-                  <p className="text-red-700 text-sm font-light">{error}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Step 2: Preview & Analyze - Show when file selected but not loading/complete */}
         {preview && !loading && !result && (
@@ -320,10 +245,10 @@ export default function UploadPage() {
             <div className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-lg p-12 border border-gray-200">
               <div className="text-center mb-8">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-zen-sage to-zen-pine mb-4">
-                  <span className="text-white text-2xl font-light">2</span>
+                  <span className="text-white text-2xl font-light">✓</span>
                 </div>
                 <h2 className="text-2xl font-serif font-light text-zen-pine tracking-calm">
-                  Review Your Image
+                  Demo Room Ready
                 </h2>
               </div>
 
@@ -340,18 +265,12 @@ export default function UploadPage() {
                 </div>
               </div>
 
-              <div className="flex gap-4 justify-center">
+              <div className="flex justify-center">
                 <button
                   onClick={handleUpload}
                   className="px-16 py-4 text-lg rounded-full bg-zen-sage/90 hover:bg-zen-sage text-white transition-all duration-500 ease-out shadow-2xl hover:shadow-3xl hover:scale-105 font-light tracking-calm"
                 >
                   Analyze Energy Flow
-                </button>
-                <button
-                  onClick={handleReset}
-                  className="px-8 py-4 text-lg rounded-full bg-white/80 hover:bg-white text-zen-earth border-2 border-gray-300 hover:border-zen-sage transition-all duration-500 font-light shadow-lg"
-                >
-                  Choose Different Image
                 </button>
               </div>
             </div>
