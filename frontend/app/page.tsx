@@ -121,13 +121,17 @@ export default function Home() {
         </div>
 
         {/* Mascot peeking from bottom right */}
-        <div className="fixed bottom-[-9px] right-48 pointer-events-none">
+        <div
+          className="fixed bottom-[-9px] right-48 cursor-pointer transition-transform duration-300 hover:scale-105"
+          onMouseEnter={() => setMascotHovered(true)}
+          onMouseLeave={() => setMascotHovered(false)}
+        >
           <Image
-            src="/mascot_peeking_1.png"
+            src={mascotHovered ? "/mascot_peeking_eyes_closed_action.png" : "/mascot_peeking_1.png"}
             alt="Feng Shui Mascot"
             width={200}
             height={200}
-            className="object-contain"
+            className="object-contain transition-opacity duration-200"
             priority
           />
         </div>
