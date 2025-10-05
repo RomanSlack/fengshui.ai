@@ -68,7 +68,7 @@ export default function UploadPage() {
     if (isAuth0Authenticated && authModalVisible) {
       setTimeout(() => {
         setAuthModalVisible(false);
-      }, 500); // Small delay before fade-out
+      }, 500);
     }
   }, [isAuth0Authenticated, authModalVisible]);
 
@@ -83,9 +83,8 @@ export default function UploadPage() {
 
   // TESTING: Paywall toggle (disable for testing)
   const [paywallEnabled, setPaywallEnabled] = useState(() => {
-    // Load from localStorage (persists across refreshes)
     const stored = localStorage.getItem('fengshui_paywall_enabled');
-    return stored === null ? true : stored === 'true'; // Default: enabled
+    return stored === null ? true : stored === 'true';
   });
 
   const FREE_REQUESTS = 3;
@@ -174,19 +173,15 @@ export default function UploadPage() {
       // Increment request count and deduct balance (only if paywall enabled)
       if (paywallEnabled) {
         if (!isAuth0Authenticated) {
-          // Not signed in - count free requests
           const newCount = requestCount + 1;
           setRequestCount(newCount);
           localStorage.setItem('fengshui_request_count', newCount.toString());
         } else if (isAuth0Authenticated && isEchoAuthenticated && echoClient) {
-          // Signed in with both Auth0 and Echo - deduct from balance
           await echoClient.balance.deduct({ amount: 100 });
-          // Refresh balance
           const bal = await echoClient.balance.get();
           setBalance(bal.balance);
         }
       }
-      // If Auth0 authenticated but not Echo, treat as unlimited (or implement your logic)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to analyze image");
     } finally {
@@ -197,7 +192,6 @@ export default function UploadPage() {
   const handleAddCredits = async () => {
     if (!echoClient) return;
     try {
-      // Create payment link for $5 (5000 credits at $0.01 per 100 credits = 50 analyses)
       const paymentLink = await echoClient.balance.createPaymentLink({
         amount: 5000,
         returnUrl: window.location.href
@@ -216,13 +210,12 @@ export default function UploadPage() {
   };
 
   return (
-    <main className={`min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 transition-opacity duration-700 ${isNavigating ? 'opacity-0' : fadeIn ? 'opacity-100' : 'opacity-0'}`}>
+    <main className={`min-h-screen bg-gradient-to-b from-zen-cloud to-alabaster transition-opacity duration-1000 ${isNavigating ? 'opacity-0' : fadeIn ? 'opacity-100' : 'opacity-0'}`}>
       {/* Mandatory Auth Modal */}
       {!isAuth0Authenticated && authModalVisible && (
         <div className={`fixed inset-0 bg-white z-50 flex items-center justify-center transition-opacity duration-1000 ${isAuth0Authenticated ? 'opacity-0' : 'opacity-100'}`}>
           <div className="max-w-md w-full mx-4">
             <div className="bg-white rounded-3xl shadow-2xl p-12 text-center border border-gray-100">
-              {/* Logo or Icon */}
               <div className="mb-8">
                 <div className="w-20 h-20 mx-auto bg-gradient-to-br from-zen-sage to-zen-pine rounded-full flex items-center justify-center">
                   <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -231,17 +224,14 @@ export default function UploadPage() {
                 </div>
               </div>
 
-              {/* Title */}
               <h2 className="text-3xl font-serif font-light text-zen-pine mb-3 tracking-calm">
                 Welcome
               </h2>
 
-              {/* Description */}
               <p className="text-gray-600 font-light mb-8 leading-relaxed">
                 Please sign in to begin your feng shui journey
               </p>
 
-              {/* Auth Button */}
               <div className="flex justify-center">
                 <Auth0Button />
               </div>
@@ -253,36 +243,40 @@ export default function UploadPage() {
       {/* Top Navigation */}
       <TopNav onNavigate={() => setIsNavigating(true)} />
 
-      <div className="container mx-auto px-4 py-8">
+      {/* Main Content - Linear Flow */}
+      <div className="max-w-5xl mx-auto px-4 py-12">
 
-        <div className="max-w-7xl mx-auto">
-
-          <h2 className="text-4xl font-bold text-gray-900 mb-4 text-center">
+        {/* Header Section */}
+        <div className="text-center mb-16 space-y-4">
+          <h1 className="text-5xl font-serif font-light text-zen-pine tracking-calm">
             Feng Shui Analysis
-          </h2>
-          <p className="text-lg text-gray-600 mb-8 text-center">
-            Upload a photo of your room to receive personalized feng shui insights
+          </h1>
+          <p className="text-lg text-zen-earth font-light leading-relaxed max-w-2xl mx-auto">
+            Upload a photo of your room to receive personalized feng shui insights and harmonize your space
           </p>
+        </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-            {/* Upload Section */}
-            <div className="mb-8">
+        {/* Step 1: Upload Section - Only show when no file selected */}
+        {!preview && !loading && !result && (
+          <div className="transition-all duration-700 ease-out">
+            <div className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-lg p-12 border border-gray-200">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-zen-sage to-zen-pine mb-4">
+                  <span className="text-white text-2xl font-light">1</span>
+                </div>
+                <h2 className="text-2xl font-serif font-light text-zen-pine tracking-calm">
+                  Choose Your Space
+                </h2>
+              </div>
+
               <label
                 htmlFor="file-upload"
-                className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                className="block cursor-pointer group"
               >
-                {preview ? (
-                  <div className="relative w-full h-full">
-                    <img
-                      src={preview}
-                      alt="Preview"
-                      className="w-full h-full object-contain rounded-xl"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <div className="relative h-80 border-2 border-dashed border-zen-sage/40 rounded-2xl hover:border-zen-sage hover:bg-zen-sage/5 transition-all duration-500 flex flex-col items-center justify-center">
+                  <div className="w-20 h-20 mb-6 rounded-full bg-zen-sage/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
                     <svg
-                      className="w-12 h-12 mb-4 text-gray-400"
+                      className="w-10 h-10 text-zen-sage"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -290,17 +284,18 @@ export default function UploadPage() {
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        strokeWidth={2}
+                        strokeWidth={1.5}
                         d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                       />
                     </svg>
-                    <p className="mb-2 text-sm text-gray-500">
-                      <span className="font-semibold">Click to upload</span> or
-                      drag and drop
-                    </p>
-                    <p className="text-xs text-gray-400">PNG, JPG, JPEG (MAX. 10MB)</p>
                   </div>
-                )}
+                  <p className="text-xl text-zen-pine font-light mb-2">
+                    Click to upload or drag and drop
+                  </p>
+                  <p className="text-sm text-zen-earth/70 font-light">
+                    PNG, JPG, or JPEG (Max 10MB)
+                  </p>
+                </div>
                 <input
                   id="file-upload"
                   type="file"
@@ -309,157 +304,234 @@ export default function UploadPage() {
                   onChange={handleFileSelect}
                 />
               </label>
-            </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-4">
-              <button
-                onClick={handleUpload}
-                disabled={!selectedFile || loading}
-                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center">
-                    <svg
-                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Analyzing...
-                  </span>
-                ) : (
-                  "Analyze Feng Shui"
-                )}
-              </button>
-              {(selectedFile || result) && (
-                <button
-                  onClick={handleReset}
-                  disabled={loading}
-                  className="px-6 py-3 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium border border-gray-300 disabled:opacity-50"
-                >
-                  Reset
-                </button>
+              {error && (
+                <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                  <p className="text-red-700 text-sm font-light">{error}</p>
+                  {showPaymentPrompt && !isAuth0Authenticated && (
+                    <p className="text-gray-700 text-sm mt-2 font-light">
+                      Sign in with Google to continue using Feng Shui AI!
+                    </p>
+                  )}
+                </div>
               )}
             </div>
-
-            {/* Error Message */}
-            {error && (
-              <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-700 text-sm">{error}</p>
-                {showPaymentPrompt && !isAuth0Authenticated && (
-                  <p className="text-gray-700 text-sm mt-2">
-                    Sign in with Google to continue using Feng Shui AI!
-                  </p>
-                )}
-              </div>
-            )}
           </div>
+        )}
 
-          {/* Results Section */}
-          {result && (
-            <div className="space-y-6">
-              {/* Score Card with Circular Progress */}
-              <div className="bg-white rounded-2xl shadow-lg p-8">
-                <div className="flex flex-col md:flex-row items-center justify-center gap-8">
-                  <CircularProgress score={result.score} size={220} strokeWidth={16} />
-                  <div className="flex-1 text-center md:text-left">
-                    <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                      Your Feng Shui Score
-                    </h2>
-                    <p className="text-gray-600 leading-relaxed">
-                      {result.overall_analysis}
+        {/* Step 2: Preview & Analyze - Show when file selected but not loading/complete */}
+        {preview && !loading && !result && (
+          <div className="transition-all duration-700 ease-out space-y-8">
+            <div className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-lg p-12 border border-gray-200">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-zen-sage to-zen-pine mb-4">
+                  <span className="text-white text-2xl font-light">2</span>
+                </div>
+                <h2 className="text-2xl font-serif font-light text-zen-pine tracking-calm">
+                  Review Your Image
+                </h2>
+              </div>
+
+              <div className="flex justify-center mb-8">
+                <div className="relative rounded-2xl overflow-hidden shadow-xl max-h-96 inline-block">
+                  <img
+                    src={preview}
+                    alt="Preview"
+                    className="max-h-96 w-auto object-contain"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4 justify-center">
+                <button
+                  onClick={handleUpload}
+                  className="px-16 py-4 text-lg rounded-full bg-zen-sage/90 hover:bg-zen-sage text-white transition-all duration-500 ease-out shadow-2xl hover:shadow-3xl hover:scale-105 font-light tracking-calm"
+                >
+                  Analyze Energy Flow
+                </button>
+                <button
+                  onClick={handleReset}
+                  className="px-8 py-4 text-lg rounded-full bg-white/80 hover:bg-white text-zen-earth border-2 border-gray-300 hover:border-zen-sage transition-all duration-500 font-light shadow-lg"
+                >
+                  Choose Different Image
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Loading State - Elegant Animation */}
+        {loading && (
+          <div className="transition-all duration-700 ease-out">
+            <div className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-lg p-12 border border-gray-200">
+              <div className="text-center space-y-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-zen-sage to-zen-pine mb-4">
+                  <span className="text-white text-2xl font-light">3</span>
+                </div>
+
+                <h2 className="text-2xl font-serif font-light text-zen-pine tracking-calm">
+                  Analyzing Your Space
+                </h2>
+
+                {/* Zen Loading Animation */}
+                <div className="flex flex-col items-center space-y-8 py-8">
+                  {/* Breathing Circle */}
+                  <div className="relative">
+                    <div className="w-32 h-32 rounded-full border-4 border-zen-sage/20 border-t-zen-sage animate-spin"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-20 h-20 rounded-full bg-zen-sage/10 animate-pulse"></div>
+                    </div>
+                  </div>
+
+                  {/* Loading Steps */}
+                  <div className="space-y-4 text-center">
+                    <p className="text-zen-earth font-light text-lg animate-pulse">
+                      Detecting objects and energy patterns...
+                    </p>
+                    <p className="text-zen-earth/70 font-light text-sm">
+                      This may take a few moments as we analyze your space
                     </p>
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
 
-              {/* Interactive Visualization with Tooltips - LARGER */}
-              {result.tooltips && result.tooltips.length > 0 && preview && (
-                <div className="bg-white rounded-2xl shadow-lg p-8">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                    🔍 Interactive Analysis
-                  </h3>
-                  <p className="text-base text-gray-600 mb-6">
-                    Hover over or click the info icons on the image to see specific feng shui insights for each object
-                  </p>
-                  <FengShuiVisualization
-                    imageUrl={preview}
-                    tooltips={result.tooltips}
-                  />
+        {/* Step 4: Results Section - Beautiful Display */}
+        {result && !loading && (
+          <div className="transition-all duration-700 ease-out space-y-12">
+
+            {/* Score Overview */}
+            <div className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-lg p-12 border border-gray-200">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-zen-sage to-zen-pine mb-4">
+                  <span className="text-white text-2xl font-light">✓</span>
                 </div>
-              )}
-
-
-              {/* Strengths & Weaknesses */}
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Strengths */}
-                <div className="bg-green-50 border border-green-200 rounded-2xl p-6">
-                  <h3 className="text-lg font-bold text-green-900 mb-3 flex items-center gap-2">
-                    <span className="text-2xl">✓</span>
-                    Strengths
-                  </h3>
-                  <ul className="space-y-2">
-                    {result.strengths.map((strength, idx) => (
-                      <li key={idx} className="text-green-800 text-sm">
-                        • {strength}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Weaknesses */}
-                <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
-                  <h3 className="text-lg font-bold text-red-900 mb-3 flex items-center gap-2">
-                    <span className="text-2xl">✗</span>
-                    Weaknesses
-                  </h3>
-                  <ul className="space-y-2">
-                    {result.weaknesses.map((weakness, idx) => (
-                      <li key={idx} className="text-red-800 text-sm">
-                        • {weakness}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <h2 className="text-2xl font-serif font-light text-zen-pine tracking-calm mb-6">
+                  Your Feng Shui Assessment
+                </h2>
               </div>
 
-              {/* Suggestions */}
-              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
-                <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center gap-2">
-                  <span className="text-2xl">💡</span>
-                  Improvement Suggestions
-                </h3>
-                <ul className="space-y-2">
-                  {result.suggestions.map((suggestion, idx) => (
-                    <li key={idx} className="text-blue-800 text-sm">
-                      {idx + 1}. {suggestion}
+              <div className="flex flex-col md:flex-row items-center justify-center gap-12">
+                <CircularProgress score={result.score} size={220} strokeWidth={16} />
+                <div className="flex-1 text-center md:text-left max-w-xl">
+                  <h3 className="text-xl font-serif font-light text-zen-pine mb-4 tracking-calm">
+                    Overall Analysis
+                  </h3>
+                  <p className="text-zen-earth font-light leading-relaxed">
+                    {result.overall_analysis}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Interactive Visualization */}
+            {result.tooltips && result.tooltips.length > 0 && preview && (
+              <div className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-lg p-12 border border-gray-200">
+                <div className="mb-8">
+                  <h3 className="text-2xl font-serif font-light text-zen-pine mb-2 tracking-calm">
+                    Interactive Energy Map
+                  </h3>
+                  <p className="text-zen-earth font-light">
+                    Hover over the icons to explore specific insights about each element in your space
+                  </p>
+                </div>
+                <FengShuiVisualization
+                  imageUrl={preview}
+                  tooltips={result.tooltips}
+                />
+              </div>
+            )}
+
+            {/* Strengths & Weaknesses Grid */}
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* Strengths */}
+              <div className="bg-green-50/80 backdrop-blur-sm border-2 border-green-200 rounded-3xl p-8 shadow-lg">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center">
+                    <span className="text-white text-2xl">✓</span>
+                  </div>
+                  <h3 className="text-xl font-serif font-light text-green-900 tracking-calm">
+                    Strengths
+                  </h3>
+                </div>
+                <ul className="space-y-3">
+                  {result.strengths.map((strength, idx) => (
+                    <li key={idx} className="text-green-800 font-light leading-relaxed flex items-start gap-3">
+                      <span className="text-green-500 mt-1">•</span>
+                      <span>{strength}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
-              {/* 3D Model Viewer - Embedded at bottom */}
-              {result.model_3d && result.model_3d.model_id && (
-                <Embedded3DViewer modelId={result.model_3d.model_id} />
-              )}
+              {/* Weaknesses */}
+              <div className="bg-red-50/80 backdrop-blur-sm border-2 border-red-200 rounded-3xl p-8 shadow-lg">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center">
+                    <span className="text-white text-2xl">✗</span>
+                  </div>
+                  <h3 className="text-xl font-serif font-light text-red-900 tracking-calm">
+                    Areas to Address
+                  </h3>
+                </div>
+                <ul className="space-y-3">
+                  {result.weaknesses.map((weakness, idx) => (
+                    <li key={idx} className="text-red-800 font-light leading-relaxed flex items-start gap-3">
+                      <span className="text-red-500 mt-1">•</span>
+                      <span>{weakness}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Suggestions */}
+            <div className="bg-zen-sage/10 backdrop-blur-sm border-2 border-zen-sage/30 rounded-3xl p-8 shadow-lg">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-full bg-zen-sage flex items-center justify-center">
+                  <span className="text-white text-2xl">💡</span>
+                </div>
+                <h3 className="text-xl font-serif font-light text-zen-pine tracking-calm">
+                  Improvement Suggestions
+                </h3>
+              </div>
+              <ul className="space-y-4">
+                {result.suggestions.map((suggestion, idx) => (
+                  <li key={idx} className="text-zen-earth font-light leading-relaxed flex items-start gap-4">
+                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-zen-sage/20 flex items-center justify-center text-zen-pine font-medium text-sm">
+                      {idx + 1}
+                    </span>
+                    <span className="pt-1">{suggestion}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* 3D Model Viewer */}
+            {result.model_3d && result.model_3d.model_id && (
+              <Embedded3DViewer modelId={result.model_3d.model_id} />
+            )}
+
+            {/* New Analysis Button */}
+            <div className="text-center pt-8">
+              <button
+                onClick={handleReset}
+                className="px-16 py-4 text-lg rounded-full bg-white/80 hover:bg-white text-zen-pine border-2 border-zen-sage hover:border-zen-pine transition-all duration-500 font-light shadow-xl hover:scale-105 tracking-calm"
+              >
+                Analyze Another Space
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Organic background shapes */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-zen-sage/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-zen-petal/5 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/3 left-1/3 w-64 h-64 bg-zen-pine/5 rounded-full blur-2xl"></div>
       </div>
     </main>
   );
