@@ -192,25 +192,35 @@ className="... text-lg ..." // message
    - More room to zoom out
    - Prevents getting too close
 
-3. **Icon size:** Increased from `w-10 h-10` to `w-16 h-16`
-   - 64px instead of 40px
-   - Text increased to `text-2xl`
+3. **Grid removed:** Eliminated `<gridHelper>` for cleaner 3D view
 
-4. **Icon distance factor:** Changed from `10` to `6`
-   - Makes icons appear larger in 3D space
+4. **Icon size:** MUCH larger for visibility
+   - Increased from `w-10 h-10` to `w-24 h-24` (96px!)
+   - Text increased to `text-4xl`
+   - Stronger shadow for depth
 
-5. **Card width:** Increased from `w-80` to `w-96`
-   - 384px instead of 320px
+5. **Icon distance factor:** Changed from `10` to `3`
+   - Makes icons appear MUCH larger in 3D space
+   - Easier to find in the scene
 
-6. **Card padding:** Increased from `p-6` to `p-8`
-   - More breathing room
+6. **Pulse effect:** Increased opacity from 0.5 to 0.75
+   - More visible animated ring
 
-7. **Badge size:** Increased from `w-11 h-11` to `w-14 h-14`
-   - Better visibility
+7. **Card width:** Increased to `w-[32rem]` (512px)
+   - Was 320px, now 512px for readability
 
-8. **Typography:** Increased all text sizes by one level
-   - Title: `text-xl` → `text-2xl`
-   - Message: `text-lg` → `text-xl`
+8. **Card padding:** Increased from `p-6` to `p-10`
+   - More breathing room (40px)
+
+9. **Badge size:** Increased from `w-11 h-11` to `w-16 h-16`
+   - Better visibility (64px)
+
+10. **Typography:** Increased all text sizes significantly
+    - Title: `text-xl` → `text-3xl` (30px)
+    - Message: `text-lg` → `text-2xl` (24px)
+    - Badge icon text: `text-3xl` (24px)
+
+11. **Border:** Increased from 3px to 4px for stronger presence
 
 ---
 

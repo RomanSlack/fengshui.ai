@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState, useRef, useMemo } from 'react';
 import { Canvas, useLoader, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera, Environment, Center, Html } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera, Environment, Center } from '@react-three/drei';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import * as THREE from 'three';
 
@@ -30,6 +30,7 @@ interface Tooltip {
 
 interface TooltipMarker {
   position: THREE.Vector3;
+  screenPosition: { x: number; y: number };
   tooltip: Tooltip;
   index: number;
 }
@@ -131,6 +132,7 @@ function FBXModelWithTooltips({
 
           markers.push({
             position: worldPos,
+            screenPosition: { x: 0, y: 0 }, // Will be updated dynamically
             tooltip,
             index
           });
@@ -148,141 +150,29 @@ function FBXModelWithTooltips({
   );
 }
 
-function TooltipMarkers({ markers }: { markers: TooltipMarker[] }) {
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+// Component to track 3D positions and update screen positions
+function ScreenSpaceMarkers({ markers, onUpdateScreenPositions }: {
+  markers: TooltipMarker[];
+  onUpdateScreenPositions: (positions: { x: number; y: number }[]) => void;
+}) {
+  const { camera, size } = useThree();
 
-  const getTooltipColor = (type: string) => {
-    switch (type) {
-      case 'good':
-        return {
-          color: '#22c55e',
-          icon: '✓'
-        };
-      case 'bad':
-        return {
-          color: '#ef4444',
-          icon: '✗'
-        };
-      default:
-        return {
-          color: '#eab308',
-          icon: '!'
-        };
-    }
-  };
+  useFrame(() => {
+    const screenPositions = markers.map(marker => {
+      const vec = marker.position.clone();
+      vec.project(camera);
 
-  return (
-    <>
-      {markers.map((marker, idx) => {
-        const colors = getTooltipColor(marker.tooltip.type);
-        const isActive = activeIndex === idx;
+      // Convert to screen coordinates
+      const x = (vec.x * 0.5 + 0.5) * size.width;
+      const y = (vec.y * -0.5 + 0.5) * size.height;
 
-        return (
-          <group key={idx} position={marker.position}>
-            {/* Info icon sprite - distanceFactor controls size scaling with distance */}
-            {/* Lower distanceFactor = larger icons, Higher = smaller icons */}
-            <Html
-              center
-              distanceFactor={6}
-              style={{
-                transition: 'all 0.3s ease',
-                pointerEvents: 'auto'
-              }}
-            >
-              <div
-                className="relative cursor-pointer"
-                onMouseEnter={() => setActiveIndex(idx)}
-                onMouseLeave={() => setActiveIndex(null)}
-                onClick={() => setActiveIndex(activeIndex === idx ? null : idx)}
-              >
-                {/* Icon circle - increased size from w-10 h-10 to w-16 h-16 */}
-                <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-2xl transition-all duration-200 hover:scale-110"
-                  style={{
-                    backgroundColor: colors.color,
-                    boxShadow: isActive ? `0 0 20px ${colors.color}` : `0 2px 10px rgba(0,0,0,0.3)`
-                  }}
-                >
-                  i
-                </div>
+      return { x, y };
+    });
 
-                {/* Pulse ring when not active */}
-                {!isActive && (
-                  <div
-                    className="absolute inset-0 rounded-full animate-ping opacity-50"
-                    style={{
-                      backgroundColor: colors.color
-                    }}
-                  />
-                )}
+    onUpdateScreenPositions(screenPositions);
+  });
 
-                {/* Tooltip card - appears on hover - increased from w-80 to w-96 */}
-                {isActive && (
-                  <div
-                    className="absolute left-1/2 -translate-x-1/2 top-20 w-96 max-w-[90vw] z-50"
-                    style={{
-                      animation: 'fadeIn 0.3s ease-out'
-                    }}
-                  >
-                    <div
-                      className="rounded-xl shadow-2xl p-8 border-3 backdrop-blur-sm"
-                      style={{
-                        backgroundColor: marker.tooltip.type === 'good'
-                          ? 'rgb(240, 253, 244)'
-                          : marker.tooltip.type === 'bad'
-                          ? 'rgb(254, 242, 242)'
-                          : 'rgb(254, 252, 232)',
-                        borderColor: colors.color,
-                        borderWidth: '3px'
-                      }}
-                    >
-                      <div className="flex items-start gap-4">
-                        <div
-                          className="flex-shrink-0 w-14 h-14 text-white rounded-full flex items-center justify-center font-bold text-2xl"
-                          style={{ backgroundColor: colors.color }}
-                        >
-                          {colors.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-bold text-2xl capitalize mb-3" style={{
-                            color: marker.tooltip.type === 'good'
-                              ? 'rgb(20, 83, 45)'
-                              : marker.tooltip.type === 'bad'
-                              ? 'rgb(127, 29, 29)'
-                              : 'rgb(113, 63, 18)'
-                          }}>
-                            {marker.tooltip.object_class}
-                          </div>
-                          <div className="text-xl leading-relaxed" style={{
-                            color: marker.tooltip.type === 'good'
-                              ? 'rgb(22, 101, 52)'
-                              : marker.tooltip.type === 'bad'
-                              ? 'rgb(153, 27, 27)'
-                              : 'rgb(133, 77, 14)'
-                          }}>
-                            {marker.tooltip.message}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Arrow pointing to icon */}
-                    <div
-                      className="absolute left-1/2 -translate-x-1/2 -top-2 w-0 h-0"
-                      style={{
-                        borderLeft: '8px solid transparent',
-                        borderRight: '8px solid transparent',
-                        borderBottom: `8px solid ${colors.color}`
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-            </Html>
-          </group>
-        );
-      })}
-    </>
-  );
+  return null;
 }
 
 function Scene({
@@ -291,7 +181,8 @@ function Scene({
   imageWidth,
   imageHeight,
   markers,
-  onMarkersReady
+  onMarkersReady,
+  onUpdateScreenPositions
 }: {
   modelUrl: string;
   tooltips: Tooltip[];
@@ -299,6 +190,7 @@ function Scene({
   imageHeight: number;
   markers: TooltipMarker[];
   onMarkersReady: (markers: TooltipMarker[]) => void;
+  onUpdateScreenPositions: (positions: { x: number; y: number }[]) => void;
 }) {
   return (
     <>
@@ -349,10 +241,10 @@ function Scene({
         />
       </Suspense>
 
-      {/* Render tooltip markers */}
-      {markers.length > 0 && <TooltipMarkers markers={markers} />}
-
-      <gridHelper args={[20, 20]} />
+      {/* Track screen positions */}
+      {markers.length > 0 && (
+        <ScreenSpaceMarkers markers={markers} onUpdateScreenPositions={onUpdateScreenPositions} />
+      )}
     </>
   );
 }
@@ -364,6 +256,8 @@ export default function ModelViewer3DWithTooltips({
   imageHeight
 }: ModelViewer3DWithTooltipsProps) {
   const [markers, setMarkers] = useState<TooltipMarker[]>([]);
+  const [screenPositions, setScreenPositions] = useState<{ x: number; y: number }[]>([]);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [key, setKey] = useState(0);
 
   useEffect(() => {
@@ -374,17 +268,41 @@ export default function ModelViewer3DWithTooltips({
     setMarkers(newMarkers);
   };
 
+  const handleUpdateScreenPositions = (positions: { x: number; y: number }[]) => {
+    setScreenPositions(positions);
+  };
+
+  const getTooltipColor = (type: string) => {
+    switch (type) {
+      case 'good':
+        return {
+          color: '#22c55e',
+          icon: '✓'
+        };
+      case 'bad':
+        return {
+          color: '#ef4444',
+          icon: '✗'
+        };
+      default:
+        return {
+          color: '#eab308',
+          icon: '!'
+        };
+    }
+  };
+
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full relative">
       <style jsx global>{`
         @keyframes fadeIn {
           from {
             opacity: 0;
-            transform: translateX(-50%) translateY(-10px);
+            transform: translateY(-10px);
           }
           to {
             opacity: 1;
-            transform: translateX(-50%) translateY(0);
+            transform: translateY(0);
           }
         }
       `}</style>
@@ -407,8 +325,121 @@ export default function ModelViewer3DWithTooltips({
           imageHeight={imageHeight}
           markers={markers}
           onMarkersReady={handleMarkersReady}
+          onUpdateScreenPositions={handleUpdateScreenPositions}
         />
       </Canvas>
+
+      {/* Overlay tooltips on top of canvas */}
+      {markers.map((marker, idx) => {
+        const screenPos = screenPositions[idx];
+        if (!screenPos) return null;
+
+        const colors = getTooltipColor(marker.tooltip.type);
+        const isActive = activeIndex === idx;
+
+        return (
+          <div
+            key={idx}
+            className="absolute pointer-events-auto"
+            style={{
+              left: `${screenPos.x}px`,
+              top: `${screenPos.y}px`,
+              transform: 'translate(-50%, -50%)',
+              zIndex: isActive ? 100 : 50
+            }}
+          >
+            <div
+              className="relative cursor-pointer"
+              onMouseEnter={() => setActiveIndex(idx)}
+              onMouseLeave={() => setActiveIndex(null)}
+              onClick={() => setActiveIndex(activeIndex === idx ? null : idx)}
+            >
+              {/* Icon circle - fixed size regardless of camera */}
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl transition-all duration-200 hover:scale-110"
+                style={{
+                  backgroundColor: colors.color,
+                  boxShadow: isActive ? `0 0 30px ${colors.color}` : `0 4px 20px rgba(0,0,0,0.5)`
+                }}
+              >
+                i
+              </div>
+
+              {/* Pulse ring when not active */}
+              {!isActive && (
+                <div
+                  className="absolute inset-0 rounded-full animate-ping opacity-75"
+                  style={{
+                    backgroundColor: colors.color
+                  }}
+                />
+              )}
+
+              {/* Tooltip card - appears on hover */}
+              {isActive && (
+                <div
+                  className="absolute left-1/2 -translate-x-1/2 top-16 w-96 max-w-[90vw]"
+                  style={{
+                    animation: 'fadeIn 0.3s ease-out',
+                    zIndex: 1000
+                  }}
+                >
+                  <div
+                    className="rounded-2xl shadow-2xl p-8 border-4 backdrop-blur-md"
+                    style={{
+                      backgroundColor: marker.tooltip.type === 'good'
+                        ? 'rgb(240, 253, 244)'
+                        : marker.tooltip.type === 'bad'
+                        ? 'rgb(254, 242, 242)'
+                        : 'rgb(254, 252, 232)',
+                      borderColor: colors.color,
+                      borderWidth: '4px'
+                    }}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div
+                        className="flex-shrink-0 w-14 h-14 text-white rounded-full flex items-center justify-center font-bold text-2xl"
+                        style={{ backgroundColor: colors.color }}
+                      >
+                        {colors.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-2xl capitalize mb-3" style={{
+                          color: marker.tooltip.type === 'good'
+                            ? 'rgb(20, 83, 45)'
+                            : marker.tooltip.type === 'bad'
+                            ? 'rgb(127, 29, 29)'
+                            : 'rgb(113, 63, 18)'
+                        }}>
+                          {marker.tooltip.object_class}
+                        </div>
+                        <div className="text-xl leading-relaxed" style={{
+                          color: marker.tooltip.type === 'good'
+                            ? 'rgb(22, 101, 52)'
+                            : marker.tooltip.type === 'bad'
+                            ? 'rgb(153, 27, 27)'
+                            : 'rgb(133, 77, 14)'
+                        }}>
+                          {marker.tooltip.message}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Arrow pointing to icon */}
+                  <div
+                    className="absolute left-1/2 -translate-x-1/2 -top-2 w-0 h-0"
+                    style={{
+                      borderLeft: '8px solid transparent',
+                      borderRight: '8px solid transparent',
+                      borderBottom: `8px solid ${colors.color}`
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
