@@ -92,15 +92,15 @@
     animation: wave-2 4s ease-in-out infinite 1s;
   }
 
-  /* Heart pop animation - quick bounce, float up and drift right */
+  /* Heart pop animation - smooth constant drift with fade */
   @keyframes heart-pop {
     0% {
-      transform: translate(-50%, 0) scale(0.5);
+      transform: translate(0, 0) scale(0.8);
       opacity: 0;
     }
-    50% {
-      transform: translate(20px, -30px) scale(1.2);
+    15% {
       opacity: 1;
+      transform: translate(5px, -10px) scale(1);
     }
     100% {
       transform: translate(60px, -80px) scale(1);
@@ -109,6 +109,6 @@
   }
 
   .animate-heart-pop {
-    animation: heart-pop 1s ease-out forwards;
+    animation: heart-pop 1.5s linear forwards;
   }
 }

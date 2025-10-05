@@ -8,6 +8,7 @@ import { TopNav } from '@/components/TopNav';
 import { FengShuiVisualization } from '@/components/FengShuiVisualization';
 import { CircularProgress } from '@/components/CircularProgress';
 import Embedded3DViewer from '@/components/Embedded3DViewer';
+import Image from 'next/image';
 
 interface Tooltip {
   object_class: string;
@@ -44,6 +45,7 @@ export default function UploadPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showMascotWelcome, setShowMascotWelcome] = useState(true);
 
   // Auth0 integration
   const { isAuthenticated: isAuth0Authenticated, user: auth0User } = useAuth0();
@@ -220,6 +222,10 @@ export default function UploadPage() {
     setError(null);
   };
 
+  const handleContinueFromMascot = () => {
+    setShowMascotWelcome(false);
+  };
+
   return (
     <main className={`min-h-screen bg-gradient-to-b from-zen-cloud to-alabaster transition-opacity duration-1000 ${isNavigating ? 'opacity-0' : fadeIn ? 'opacity-100' : 'opacity-0'}`}>
       {/* Mandatory Auth Modal */}
@@ -267,8 +273,44 @@ export default function UploadPage() {
           </p>
         </div>
 
+        {/* Step 0: Mascot Welcome - Initial greeting */}
+        {showMascotWelcome && !preview && !loading && !result && (
+          <div className={`flex flex-col items-center space-y-8 transition-opacity duration-700 ease-out ${showMascotWelcome ? 'opacity-100' : 'opacity-0'}`}>
+            {/* Speech Bubble */}
+            <div className="relative max-w-xl mb-4">
+              <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 border border-zen-sage/20">
+                <p className="text-lg font-light text-zen-pine text-center leading-relaxed">
+                  Are you ready to improve your space? Just upload a single image of your room and wait for the magic to happen!
+                </p>
+                {/* Speech bubble tail pointing up to mascot */}
+                <div className="absolute top-[-8px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[8px] border-b-white/95"></div>
+              </div>
+            </div>
+
+            {/* Mascot Image */}
+            <div className="relative">
+              <Image
+                src="/mascot_standing_iter_2.png"
+                alt="Feng Shui Mascot"
+                width={306}
+                height={340}
+                className="object-contain"
+                priority
+              />
+            </div>
+
+            {/* Continue Button */}
+            <button
+              onClick={handleContinueFromMascot}
+              className="px-16 py-4 text-lg rounded-full bg-zen-sage/90 hover:bg-zen-sage text-white transition-all duration-500 ease-out shadow-2xl hover:shadow-3xl hover:scale-105 font-light tracking-calm mt-4"
+            >
+              Continue
+            </button>
+          </div>
+        )}
+
         {/* Step 1: Upload Section - Only show when no file selected */}
-        {!preview && !loading && !result && (
+        {!showMascotWelcome && !preview && !loading && !result && (
           <div className="transition-all duration-700 ease-out">
             <div className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-lg p-12 border border-gray-200">
               <div className="text-center mb-8">

@@ -36,7 +36,7 @@ export default function Home() {
     setShowHeart(true);
     setTimeout(() => {
       setShowHeart(false);
-    }, 1000); // Heart disappears after 1 second
+    }, 1500); // Heart disappears after animation completes
   };
 
   if (showLoading) {
