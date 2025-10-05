@@ -230,6 +230,23 @@ export default function UploadPage() {
     }, 700); // Wait for fade-out animation to complete
   };
 
+  const getMascotComment = (score: number): string => {
+    if (score === 10) return "Absolutely perfect! Your space radiates pure harmony!";
+    if (score === 9) return "Amazing energy flow - you've mastered feng shui!";
+    if (score === 8) return "Wonderful balance! Your space feels truly harmonious.";
+    if (score === 7) return "Great work! Just a few tweaks for perfection.";
+    if (score === 6) return "You're on the right track! Let's enhance this energy.";
+    if (score === 5) return "There's potential here - let's unlock it together!";
+    if (score === 4) return "Don't worry, we can improve this with some changes!";
+    if (score === 3) return "Your space needs attention, but I'm here to help!";
+    if (score === 2) return "Let's work together to transform this energy!";
+    return "Every space can be improved - let's start fresh!";
+  };
+
+  const getMascotImage = (score: number): string => {
+    return score >= 7 ? "/victory_good_mascot.png" : "/mascot_pointing_1.png";
+  };
+
   return (
     <main className={`min-h-screen bg-gradient-to-b from-zen-cloud to-alabaster transition-opacity duration-1000 ${isNavigating ? 'opacity-0' : fadeIn ? 'opacity-100' : 'opacity-0'}`}>
       {/* Mandatory Auth Modal */}
@@ -520,6 +537,32 @@ export default function UploadPage() {
               </div>
 
               <div className="flex flex-col md:flex-row items-center justify-center gap-12">
+                {/* Mascot with comment */}
+                <div className="flex flex-col items-center space-y-4">
+                  {/* Speech Bubble */}
+                  <div className="relative max-w-xs mb-2">
+                    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-4 border border-zen-sage/20">
+                      <p className="text-sm font-light text-zen-pine text-center leading-relaxed">
+                        {getMascotComment(result.score)}
+                      </p>
+                      {/* Speech bubble tail pointing down */}
+                      <div className="absolute bottom-[-8px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-white/95"></div>
+                    </div>
+                  </div>
+
+                  {/* Mascot Image */}
+                  <div className="relative">
+                    <Image
+                      src={getMascotImage(result.score)}
+                      alt="Feng Shui Mascot"
+                      width={160}
+                      height={160}
+                      className="object-contain drop-shadow-2xl"
+                      priority
+                    />
+                  </div>
+                </div>
+
                 <CircularProgress score={result.score} size={220} strokeWidth={16} />
                 <div className="flex-1 text-center md:text-left max-w-xl">
                   <h3 className="text-xl font-serif font-light text-zen-pine mb-4 tracking-calm">
