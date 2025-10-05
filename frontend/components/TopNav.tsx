@@ -114,7 +114,7 @@ export function TopNav({ onNavigate }: TopNavProps = {}) {
                 <div className="text-right hidden sm:block">
                   <p className="text-xs font-light text-gray-500">Balance</p>
                   <p className="text-sm font-medium text-zen-pine">
-                    {echoBalance?.balance !== undefined ? `${Math.floor(echoBalance.balance / 100)} credits` : "..."}
+                    {echoBalance?.balance !== undefined ? `$${echoBalance.balance.toFixed(2)}` : "..."}
                   </p>
                 </div>
                 <button

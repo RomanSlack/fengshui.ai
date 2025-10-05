@@ -766,7 +766,7 @@ export default function UploadPage() {
             </div>
             <div>
               <p className="font-medium text-lg">Echo Connected!</p>
-              <p className="text-sm text-white/90 font-light">You now have unlimited analyses. Balance: {echoBalance?.balance !== undefined ? `${Math.floor(echoBalance.balance / 100)} credits` : '...'}</p>
+              <p className="text-sm text-white/90 font-light">You now have unlimited analyses. Balance: {echoBalance?.balance !== undefined ? `$${echoBalance.balance.toFixed(2)}` : '...'}</p>
             </div>
           </div>
         </div>
