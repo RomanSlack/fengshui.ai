@@ -90,14 +90,30 @@ function fetchFBXWithHeaders(url: string): Promise<string> {
 }
 
 function FBXModel({ url, roughness, metalness }: { url: string; roughness: number; metalness: number }) {
-  // Fetch blob URL with Suspense support
-  const blobUrlPromise = fetchFBXWithHeaders(url);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
 
-  // Wait for blob URL before rendering
+  // Fetch blob URL in useEffect to avoid state updates during render
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchFBXWithHeaders(url)
+      .then((blob) => {
+        if (!cancelled) {
+          setBlobUrl(blob);
+        }
+      })
+      .catch((err) => {
+        console.error('[FBX] Failed to fetch:', err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [url]);
+
+  // Suspend while waiting for blob URL
   if (!blobUrl) {
-    blobUrlPromise.then(setBlobUrl);
-    throw blobUrlPromise; // Suspend until fetch completes
+    throw fetchFBXWithHeaders(url); // Suspend until fetch completes
   }
 
   // Now we can safely use the loader with the blob URL
