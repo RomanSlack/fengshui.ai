@@ -69,25 +69,59 @@ app.add_middleware(
 # Gemini client
 # Load .env from current directory or parent directory
 load_dotenv()  # Looks in current directory first, then parent
-client = genai.Client(api_key=os.environ.get("GOOGLE_API_KEY"))
+
+# Initialize client lazily to avoid cleanup errors
+_client = None
+
+def get_gemini_client():
+    """Get or create Gemini client instance"""
+    global _client
+    if _client is None:
+        api_key = os.environ.get("GOOGLE_API_KEY")
+        if not api_key:
+            raise ValueError("GOOGLE_API_KEY not found in environment variables")
+        _client = genai.Client(api_key=api_key)
+    return _client
 
 def encode_image_to_base64(file) -> str:
     return base64.b64encode(file.read()).decode("utf-8")
 
 
-def call_gemini_fengshui(image_data: bytes) -> str:
+def call_gemini_fengshui(image_data: bytes, detected_objects: list = None) -> dict:
+    """
+    Call Gemini for feng shui analysis with object-specific tooltips
+    Returns: dict with score, analysis, and object-specific tooltips
+    """
     img_b64 = base64.b64encode(image_data).decode("utf-8")
+
+    # Build object list for context
+    object_context = ""
+    if detected_objects:
+        object_context = "\n\nDetected objects in the room:\n"
+        for i, obj in enumerate(detected_objects):
+            object_context += f"{i}. {obj['class']} (confidence: {obj['confidence']:.2f})\n"
 
     prompt = (
         "You are a Feng Shui master. Analyze the room in this image.\n\n"
-        "Please provide:\n"
-        "1. A Feng Shui score from 1 to 10 (higher = better energy, balance, and flow).\n"
-        "2. Key strengths of the room’s Feng Shui (what is working well).\n"
-        "3. Key weaknesses or problems that harm the Feng Shui (why the score isn’t perfect).\n"
-        "4. Simple, practical suggestions for improvement (e.g., move furniture, reduce clutter, reposition bed, add plants, etc.).\n\n"
-        "Keep your response concise, structured, and clear."
+        f"{object_context}\n"
+        "Please provide your response in the following JSON format:\n"
+        "{\n"
+        '  "score": <number 1-10>,\n'
+        '  "overall_analysis": "<your overall feng shui analysis>",\n'
+        '  "strengths": ["<strength 1>", "<strength 2>"],\n'
+        '  "weaknesses": ["<weakness 1>", "<weakness 2>"],\n'
+        '  "suggestions": ["<suggestion 1>", "<suggestion 2>"],\n'
+        '  "object_tooltips": [\n'
+        '    {"object_index": <index from detected objects>, "type": "good|bad|neutral", "message": "<specific feng shui tip for this object>"},\n'
+        '    ...\n'
+        '  ]\n'
+        "}\n\n"
+        "For object_tooltips, select 2-4 important objects that significantly impact feng shui. "
+        "Use the object_index from the detected objects list above. "
+        "Type should be 'good' (positive energy), 'bad' (negative energy), or 'neutral' (needs adjustment)."
     )
 
+    client = get_gemini_client()
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=[
@@ -106,8 +140,9 @@ def call_gemini_fengshui(image_data: bytes) -> str:
         ],
         config=types.GenerateContentConfig(
             temperature=0.3,
-            max_output_tokens=300,
-            thinking_config=types.ThinkingConfig(thinking_budget=0)
+            max_output_tokens=800,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+            response_mime_type="application/json"
         ),
     )
 
@@ -145,6 +180,9 @@ async def generate_3d_model_background(image_data: bytes):
 
 
 @app.post("/analyze/")
+async def analyze_image(file: UploadFile = File(...)):
+    import json
+
 async def analyze_image(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     image_data = await file.read()
 
@@ -167,14 +205,63 @@ async def analyze_image(background_tasks: BackgroundTasks, file: UploadFile = Fi
         json_path = ""
         image_path = ""
 
-    # Run Feng Shui analysis
-    result = call_gemini_fengshui(image_data)
+    # Run Feng Shui analysis with detected objects
+    gemini_response = call_gemini_fengshui(image_data, detected_objects)
+
+    # Parse Gemini JSON response
+    try:
+        feng_shui_analysis = json.loads(gemini_response)
+    except json.JSONDecodeError:
+        logger.error("Failed to parse Gemini response as JSON")
+        feng_shui_analysis = {
+            "score": 5,
+            "overall_analysis": gemini_response,
+            "strengths": [],
+            "weaknesses": [],
+            "suggestions": [],
+            "object_tooltips": []
+        }
 
     # Start 3D model generation in background (non-blocking)
     background_tasks.add_task(generate_3d_model_background, image_data)
     logger.info("3D model generation queued as background task")
 
     return {"result": result}
+    # Combine tooltips with object coordinates
+    tooltips_with_coords = []
+    for tooltip in feng_shui_analysis.get("object_tooltips", []):
+        obj_idx = tooltip.get("object_index")
+        if obj_idx is not None and 0 <= obj_idx < len(detected_objects):
+            obj = detected_objects[obj_idx]
+            tooltips_with_coords.append({
+                "object_class": obj["class"],
+                "object_index": obj_idx,
+                "type": tooltip.get("type", "neutral"),
+                "message": tooltip.get("message", ""),
+                "coordinates": {
+                    "bbox": obj["bbox"],
+                    "center": obj["center"]
+                },
+                "confidence": obj["confidence"]
+            })
+
+    # Build final response
+    response = {
+        "score": feng_shui_analysis.get("score", 5),
+        "overall_analysis": feng_shui_analysis.get("overall_analysis", ""),
+        "strengths": feng_shui_analysis.get("strengths", []),
+        "weaknesses": feng_shui_analysis.get("weaknesses", []),
+        "suggestions": feng_shui_analysis.get("suggestions", []),
+        "detected_objects": detected_objects,
+        "tooltips": tooltips_with_coords,
+        "detection_metadata": {
+            "total_objects": len(detected_objects),
+            "json_path": json_path,
+            "image_path": image_path
+        }
+    }
+
+    return response
 
 
 if __name__ == "__main__":

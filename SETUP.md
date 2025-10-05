@@ -1,4 +1,4 @@
-# Feng Shui AI - Setup Guide
+# FengShui.fy - Setup Guide
 
 ## 🎯 Echo AI Monetization Integration
 
@@ -93,27 +93,6 @@ Frontend will run at: http://localhost:3000
 - $5 = 5000 credits = 50 analyses (each analysis = 100 credits = $0.10)
 - Return to app automatically after payment
 
-## 🏆 Hackathon Strategy
-
-### Why This Wins the Echo Challenge
-
-1. **Real Monetization**: Users actually pay for value (feng shui analysis)
-2. **Freemium Model**: 3 free tries → proven conversion strategy
-3. **Fair Pricing**: $0.10 per analysis is reasonable for AI-powered insights
-4. **Scalable**: Can handle unlimited users with Echo's infrastructure
-5. **Demo-Ready**:
-   - Clear value proposition
-   - Smooth payment flow
-   - Professional UI/UX
-
-### Demo Script
-
-1. Show free trial (3 analyses)
-2. Demonstrate sign-in prompt
-3. Show balance management
-4. Highlight Echo payment integration
-5. Explain pricing model
-
 ## 🔧 Technical Details
 
 ### Architecture
@@ -207,14 +186,3 @@ Track these for the hackathon demo:
 - FastAPI Docs: https://fastapi.tiangolo.com
 - Next.js Docs: https://nextjs.org/docs
 - Google Gemini: https://ai.google.dev
-
-## 🎉 Good Luck!
-
-This implementation demonstrates real monetization potential with:
-- ✅ Working payment integration
-- ✅ Clear value proposition
-- ✅ Scalable architecture
-- ✅ Professional UX
-- ✅ Ready for deployment
-
-Perfect for winning the Echo AI Monetization challenge! 🏆

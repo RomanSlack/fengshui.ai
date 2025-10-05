@@ -2,9 +2,9 @@
 
 ## 🔐 Auth0 Integration with Google Sign-In
 
-Your Feng Shui AI app now has Auth0 authentication with Google OAuth!
+FengShui.fy uses Auth0 authentication with Google OAuth!
 
-## 📋 Your Auth0 Credentials
+## 📋 Auth0 Credentials
 
 **Client ID**: `ISDSR4eqmCeTQxkGEhuLHnTEdkjdmJRY`
 **Application Type**: Regular Web Applications
@@ -189,27 +189,6 @@ console.log(user)
 console.log(isAuthenticated)
 ```
 
-## 🏆 Hackathon Benefits
-
-### Why This Wins
-
-1. **Two Sponsor Prizes**:
-   - Auth0 (social sign-in, MFA ready)
-   - Echo (monetization integration)
-
-2. **Professional Auth**: Industry-standard OAuth2
-3. **Easy UX**: One-click Google sign-in
-4. **Scalable**: Auth0 handles all auth complexity
-5. **Feature-Rich**: Ready for MFA, passwordless, etc.
-
-### Demo Script
-
-1. Show free trial (3 analyses)
-2. Demo Google sign-in flow
-3. Highlight Auth0 dashboard
-4. Show unlimited access for signed-in users
-5. Optional: Demo Echo payment integration
-
 ## 🐛 Troubleshooting
 
 **"Callback URL mismatch"**
@@ -233,14 +212,3 @@ console.log(isAuthenticated)
 - Auth0 Docs: https://auth0.com/docs
 - Auth0 React SDK: https://auth0.com/docs/quickstart/spa/react
 - Google OAuth: https://developers.google.com/identity/protocols/oauth2
-
-## 🎉 You're Ready!
-
-Your app now has:
-- ✅ Professional authentication
-- ✅ Google OAuth sign-in
-- ✅ User profile management
-- ✅ Freemium model (3 free → sign in)
-- ✅ Optional payment integration (Echo)
-
-Perfect for winning both Auth0 AND Echo sponsor prizes! 🏆🏆
