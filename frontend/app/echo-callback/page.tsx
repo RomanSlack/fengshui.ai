@@ -6,7 +6,7 @@ import { useEcho } from '@merit-systems/echo-react-sdk';
 
 export default function EchoCallbackPage() {
   const router = useRouter();
-  const { isAuthenticated } = useEcho();
+  const { isAuthenticated: isEchoAuthenticated } = useEcho();
   const [hasChecked, setHasChecked] = useState(false);
 
   useEffect(() => {
@@ -20,7 +20,14 @@ export default function EchoCallbackPage() {
     const checkAuth = setInterval(() => {
       attempts++;
 
-      if (isAuthenticated) {
+      // Check localStorage for Echo tokens as fallback
+      const echoTokenKey = Object.keys(localStorage).find(key =>
+        key.startsWith('oidc.user:https://echo.merit.systems')
+      );
+      const hasEchoTokens = !!echoTokenKey;
+      const echoIsConnected = isEchoAuthenticated || hasEchoTokens;
+
+      if (echoIsConnected) {
         // Echo is now authenticated! Clear params and redirect
         setHasChecked(true);
         clearInterval(checkAuth);
@@ -42,7 +49,7 @@ export default function EchoCallbackPage() {
     }, 500);
 
     return () => clearInterval(checkAuth);
-  }, [isAuthenticated, router]);
+  }, [isEchoAuthenticated, router]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-zen-cloud to-alabaster flex items-center justify-center">

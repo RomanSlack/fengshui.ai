@@ -348,7 +348,7 @@ export default function UploadPage() {
             <div className="relative max-w-xl mb-4">
               <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 border border-zen-sage/20">
                 <p className="text-lg font-light text-zen-pine text-center leading-relaxed">
-                  You've used your 1 free analysis! Connect Echo to analyze as many spaces as you like and unlock unlimited feng shui insights.
+                  You&apos;ve used your 1 free analysis! Connect Echo to analyze as many spaces as you like and unlock unlimited feng shui insights.
                 </p>
                 {/* Speech bubble tail pointing down to mascot */}
                 <div className="absolute bottom-[-8px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-white/95"></div>
@@ -486,10 +486,13 @@ export default function UploadPage() {
 
               <div className="flex justify-center mb-8">
                 <div className="relative rounded-2xl overflow-hidden shadow-xl max-h-96 inline-block">
-                  <img
+                  <Image
                     src={preview}
                     alt="Preview"
+                    width={800}
+                    height={600}
                     className="max-h-96 w-auto object-contain"
+                    unoptimized
                   />
                 </div>
               </div>
@@ -530,10 +533,13 @@ export default function UploadPage() {
                   {/* Image with scanning grid overlay */}
                   <div className="flex justify-center">
                     <div className="relative rounded-2xl overflow-hidden shadow-2xl max-h-96 inline-block">
-                      <img
+                      <Image
                         src={preview}
                         alt="Analyzing"
+                        width={800}
+                        height={600}
                         className="max-h-96 w-auto object-contain"
+                        unoptimized
                       />
 
                       {/* Wavy mesh grid overlay */}

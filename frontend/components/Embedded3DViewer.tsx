@@ -86,7 +86,7 @@ export default function Embedded3DViewer({ modelId }: Embedded3DViewerProps) {
         clearInterval(interval);
       }
     };
-  }, [modelId]);
+  }, [modelId, pollingInterval]);
 
   // Cleanup interval on status change
   useEffect(() => {

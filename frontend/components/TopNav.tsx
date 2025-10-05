@@ -145,9 +145,11 @@ export function TopNav({ onNavigate }: TopNavProps = {}) {
                 className="flex items-center gap-2 hover:opacity-80 transition-opacity duration-200"
               >
                 {user?.picture ? (
-                  <img
+                  <Image
                     src={user.picture}
                     alt={firstName}
+                    width={40}
+                    height={40}
                     className="w-10 h-10 rounded-full border-2 border-zen-sage/30 shadow-sm object-cover"
                     onError={(e) => {
                       // Fallback to initials if image fails to load
@@ -155,6 +157,7 @@ export function TopNav({ onNavigate }: TopNavProps = {}) {
                       const fallback = e.currentTarget.nextElementSibling as HTMLElement;
                       if (fallback) fallback.style.display = 'flex';
                     }}
+                    unoptimized
                   />
                 ) : null}
                 {/* Fallback avatar with initials */}

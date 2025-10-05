@@ -2,6 +2,7 @@
 
 import { useAuth0 } from '@auth0/auth0-react';
 import { useEffect } from 'react';
+import Image from 'next/image';
 
 export function Auth0Button() {
   const { user, isAuthenticated, isLoading, loginWithRedirect, logout, error } = useAuth0();
@@ -31,10 +32,13 @@ export function Auth0Button() {
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           {user.picture && (
-            <img
+            <Image
               src={user.picture}
               alt={firstName}
+              width={32}
+              height={32}
               className="w-8 h-8 rounded-full border-2 border-gray-200"
+              unoptimized
             />
           )}
           <div className="text-sm text-gray-700">

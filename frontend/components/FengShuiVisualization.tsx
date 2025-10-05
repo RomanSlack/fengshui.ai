@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 
 interface Tooltip {
   object_class: string;
@@ -92,14 +93,17 @@ export function FengShuiVisualization({
     <div ref={containerRef} className="relative w-full">
       {/* Main Image - Larger */}
       <div className="relative">
-        <img
+        <Image
           src={imageUrl}
           alt="Room"
+          width={1200}
+          height={800}
           className="w-full h-auto rounded-lg"
           onLoad={(e) => {
             const img = e.target as HTMLImageElement;
             setImageDimensions({ width: img.naturalWidth, height: img.naturalHeight });
           }}
+          unoptimized
         />
 
         {/* Tooltip Overlays - Transparent until clicked */}
