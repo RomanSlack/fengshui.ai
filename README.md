@@ -8,7 +8,7 @@
 ![Gemini](https://img.shields.io/badge/Gemini_2.5-AI_Analysis-4285F4?style=for-the-badge&logo=google&logoColor=white)
 ![Blender](https://img.shields.io/badge/Blender-3D_Generation-F5792A?style=for-the-badge&logo=blender&logoColor=white)
 
-![FengShui.fy Banner](data/read_banner.jpg)
+![FengShui.fy Banner](data/winning_fengshio.jpg)
 
 An AI-powered interior design analysis platform that evaluates rooms using traditional feng shui principles combined with modern computer vision and generative AI.
 
