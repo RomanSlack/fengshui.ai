@@ -29,7 +29,7 @@ FengShui.fy transforms room photos into actionable feng shui insights by combini
 
 ### Project Links
 
-- [Demo Website](https://demo.fengshui.team/upload)
+- [Demo Website](https://demofengshui.netlify.app/)
 - [Devpost Project Page](https://devpost.com/software/fengshui-fy)
 
 ## Architecture
